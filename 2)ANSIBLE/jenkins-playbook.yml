@@ -1,0 +1,104 @@
+---
+- name: Install Jenkins for Spring Boot with Java 21
+  hosts: jenkins
+  become: true
+  tasks:
+    # Install Java 21 and Maven without updating cache first
+    - name: Install Java 21 and Maven
+      apt:
+        name:
+          - openjdk-21-jdk
+          - maven
+          - git
+          - curl
+        state: present
+        update_cache: no  # Skip the initial cache update
+
+    # Create Jenkins user
+    - name: Create Jenkins user
+      user:
+        name: jenkins
+        shell: /bin/bash
+        system: yes
+        create_home: yes
+        home: /var/lib/jenkins
+
+    # Create required directories
+    - name: Create Jenkins directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: '0755'
+      with_items:
+        - /usr/share/jenkins
+        - /var/lib/jenkins
+        - /var/log/jenkins
+
+    # Download Jenkins WAR file directly
+    - name: Download Jenkins WAR
+      get_url:
+        url: https://get.jenkins.io/war-stable/latest/jenkins.war
+        dest: /usr/share/jenkins/jenkins.war
+        mode: '0644'
+        force: yes
+      register: download_jenkins
+      retries: 3
+      delay: 5
+
+    # Create systemd service
+    - name: Create Jenkins service
+      copy:
+        dest: /etc/systemd/system/jenkins.service
+        content: |
+          [Unit]
+          Description=Jenkins Continuous Integration Server
+          After=network.target
+
+          [Service]
+          User=jenkins
+          WorkingDirectory=/var/lib/jenkins
+          Environment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64"
+          Environment="JENKINS_HOME=/var/lib/jenkins"
+          ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /usr/share/jenkins/jenkins.war --httpPort=8080
+          Restart=on-failure
+          SuccessExitStatus=143
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    # Set permissions
+    - name: Set permissions
+      file:
+        path: /var/lib/jenkins
+        owner: jenkins
+        group: jenkins
+        recurse: yes
+
+    # Start and enable Jenkins
+    - name: Start Jenkins service
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    # Get initial admin password
+    - name: Get initial admin password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+      changed_when: false
+      retries: 10
+      delay: 10
+      until: jenkins_password.rc == 0
+
+    - name: Show Jenkins info
+      debug:
+        msg: |
+          Jenkins is running!
+          Access: http://{{ inventory_hostname }}:8080
+          Initial admin password: {{ jenkins_password.stdout }}
+          To get the password again, run:
+            sudo cat /var/lib/jenkins/secrets/initialAdminPassword

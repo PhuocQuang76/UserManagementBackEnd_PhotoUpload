@@ -1,0 +1,97 @@
+***** HOw to upload file *****
+Let me break down how the photo upload works in your application:
+
+1. Frontend to Backend (UserController)
+    The frontend sends a POST request to /api/users/{id}/photo with the image file as multipart/form-data
+    The UserController.uploadPhoto() method:
+    Validates the file isn't empty
+    Checks the file is an image (content type starts with "image/")
+    Calls userService.uploadUserPhoto() with the user ID and file
+2. Service Layer (UserService)
+    UserService.uploadUserPhoto():
+    Fetches the user from the database
+    If the user already has a photo, it deletes the old one from S3
+    Calls s3Service.uploadFile() to upload the new photo
+    Updates the user's photoUrl in the database with the new S3 URL
+3. S3 Upload (S3Service)
+    S3Service.uploadFile():
+    Generates a unique filename: photos/user_{userId}_{uuid}.{extension}
+    Uploads the file to the configured S3 bucket
+    Returns the public URL of the uploaded file in the format:
+    https://{bucket-name}.s3.{region}.amazonaws.com/photos/user_{userId}_{uuid}.{extension}
+4. Photo Deletion
+    When a photo is deleted via DELETE /api/users/{id}/photo:
+    The controller calls userService.deleteUserPhoto()
+    This deletes the file from S3 using the stored URL
+    Updates the user record to set photoUrl to null
+5. Configuration
+    S3Config creates the S3Client bean using AWS credentials from application.properties
+    The S3 bucket name and region are injected into S3Service from application.properties
+6. Security
+    The S3 bucket should have appropriate CORS configuration to allow uploads from your frontend
+    The IAM user associated with the AWS credentials needs s3:PutObject and s3:DeleteObject permissions on the bucket
+7. Frontend Integration
+    The frontend should:
+    Allow users to select an image file
+    Create a FormData object with the file
+    Send a POST request to /api/users/{id}/photo with the Content-Type: multipart/form-data header
+8. Error Handling
+    The service includes basic error handling for:
+    Non-existent users
+    Duplicate emails
+    File validation
+    S3 upload failures
+
+----------------------------------
+
+1) Create bucket
+    aileenphotos
+
+2) Block all public access
+Off
+
+3) Bucket policy
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::aileenphotos/*"
+            }
+        ]
+    }
+4) When using cloud_user
+* Set policy this way
+1. Create a Bucket Policy
+First, create a JSON file with the policy:
+
+cat > bucket-policy.json << 'EOF'
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::ailee/*"
+        }
+    ]
+}
+EOF
+
+2. Apply the Bucket Policy
+Run this command to apply the policy:
+
+bash
+aws s3api put-bucket-policy \
+    --bucket aileenphotos \
+    --policy file://bucket-policy.json
+
+# Using curl to test your Spring Boot endpoint
+curl -X POST "http://localhost:8080/api/users/1/photo" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/Users/aileen/MyProjects/Interview Practice/Projects/aileen1.JPG"

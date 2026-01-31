@@ -1,0 +1,22 @@
+---
+- name: Configure MySQL to allow remote connections
+  hosts: mysql_servers
+  become: true
+  tasks:
+    - name: Update MySQL bind address
+      ansible.builtin.replace:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: '^(bind-address\s*=\s*)127\.0\.0\.1$'
+        replace: '\1 0.0.0.0'
+
+    - name: Update MySQL X Plugin bind address
+      ansible.builtin.replace:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: '^(mysqlx-bind-address\s*=\s*)127\.0\.0\.1$'
+        replace: '\1 0.0.0.0'
+
+    - name: Restart MySQL service
+      ansible.builtin.service:
+        name: mysql
+        state: restarted
+        enabled: true
