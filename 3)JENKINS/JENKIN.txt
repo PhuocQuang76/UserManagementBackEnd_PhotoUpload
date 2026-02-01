@@ -1,0 +1,76 @@
+* Generate values to json file
+    terraform output -json > terraform_output.json
+
+* Create a Jenkinsfile in Your Project Root
+    Create a new file named Jenkinsfile (case-sensitive, no extension) in your project's root directory with this content:
+
+* Add to Git and Push
+
+* Set Up Jenkins Job
+    Create a New Item in Jenkins
+        Click "New Item"
+        Enter a name (e.g., "user-management-backend")
+        Select "Pipeline" and click OK
+    Configure the Pipeline:
+        Under "Pipeline" section:
+            Definition: "Pipeline script from SCM"
+            SCM: "Git"
+            Repository URL: Your Git repository URL
+            Credentials: Add your Git credentials if needed
+            Branch Specifier: */main (or your branch)
+            Script Path: Jenkinsfile (leave as default)
+    Save the Job*
+
+* Set Up Credentials in Jenkins
+    Go to Jenkins > Manage Jenkins > Credentials
+    Click on System > Global credentials (unrestricted)
+    Click "Add Credentials":
+        Kind: "SSH Username with private key"
+        Scope: "Global"
+        ID: ec2-ssh-key
+        Username: ec2-user (or your EC2 username)
+        Private Key: Paste your EC2 private key (.pem file content)
+
+* Run the Pipeline
+    Go to your Jenkins job
+    Click "Build Now"
+    Monitor the build in the "Build History" section
+
+* Verify Deployment
+    After the pipeline runs successfully:
+
+    SSH into your EC2 instance:
+        ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+    Check if the application is running:
+        ps aux | grep java
+    View logs:
+        tail -f /home/ec2-user/app.log
+
+* (Optional) Set Up Webhooks
+    For automatic builds on Git pushes:
+
+    In your GitHub repository:
+        Go to Settings > Webhooks
+        Add webhook:
+            Payload URL: http://YOUR_JENKINS_URL/github-webhook/
+            Content type: application/json
+            Events: "Just the push event"
+    In Jenkins job configuration:
+        Under "Build Triggers":
+            Check "GitHub hook trigger for GITScm polling"
+
+* Common Issues and Solutions:
+    Permission Denied:
+        # On your EC2 instance
+        chmod 600 /path/to/your-key.pem
+
+    Java Not Found:
+        # On your EC2 instance
+        sudo yum install java-17-openjdk  # For Amazon Linux
+        # OR
+        sudo apt update && sudo apt install openjdk-17-jdk  # For Ubuntu
+
+    Port Already in Use:
+        # On your EC2 instance
+        sudo lsof -i :8080  # Find process using port 8080
+        kill -9 <PID>       # Replace <PID> with the process ID

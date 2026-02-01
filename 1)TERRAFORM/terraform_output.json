@@ -1,0 +1,42 @@
+{
+  "backend_private_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "10.0.1.19"
+  },
+  "backend_public_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "98.93.136.17"
+  },
+  "jenkins_private_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "10.0.1.231"
+  },
+  "jenkins_public_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "44.210.122.99"
+  },
+  "jenkins_ssh": {
+    "sensitive": false,
+    "type": "string",
+    "value": "ssh -i userkey.pem ubuntu@44.210.122.99"
+  },
+  "jenkins_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "http://44.210.122.99:8080"
+  },
+  "mysql_private_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "10.0.1.219"
+  },
+  "mysql_public_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "13.223.0.16"
+  }
+}

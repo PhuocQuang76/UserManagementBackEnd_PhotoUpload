@@ -5,26 +5,46 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8137f2ac-ea06-4e3e-9920-793d5e90891f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/memo.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/config/SecurityConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/AuthController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/dto/LoginRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/dto/LoginResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/dto/RegisterRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/entity/BlacklistedToken.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/security/CustomUserDetailsService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/security/JwtAuthenticationFilter.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/security/JwtUtils.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/service/TokenBlacklistService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/resources/logback.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/1)TERRAFORM/terraform_output.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/UserController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/entity/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/service/S3Service.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/service/S3Service.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" beforeDir="false" afterPath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/3)JENKINS/JENKIN.txt" beforeDir="false" afterPath="$PROJECT_DIR$/3)JENKINS/JENKIN.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/user-management.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/user-management.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/UserManagementApplication.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/config/RabbitMQConfig.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/config/S3Config.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/config/SecurityConfig.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/controller/AuthController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/controller/UserController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/dto/LoginRequest.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/dto/LoginResponse.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/dto/RegisterRequest.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/BlacklistedToken.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/User$Role.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/User.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/WeatherResponse$AirQuality.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/WeatherResponse$Astro.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/WeatherResponse$Current.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/WeatherResponse$Location.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/WeatherResponse$Request.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/WeatherResponse$Root.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/entity/WeatherResponse.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/exception/EmailAlreadyExistsException.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/exception/ResourceNotFoundException.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/repository/BlacklistedTokenRepository.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/repository/UserRepository.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/security/CustomUserDetailsService.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/security/JwtAuthenticationFilter.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/security/JwtUtils.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/service/MessageProducer.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/service/RabbitMQMonitoring.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/service/S3Service.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/service/TokenBlacklistService.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/service/UserService.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/syn/usermanagement/service/WeatherService.class" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
