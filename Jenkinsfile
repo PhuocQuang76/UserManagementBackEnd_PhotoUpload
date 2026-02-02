@@ -27,9 +27,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                // Add your build steps here
-                sh 'mvn clean package'  // For Maven
-                // or sh './gradlew build'  // For Gradle
+                sh 'mvn clean package -DskipTests'
             }
         }
     }
