@@ -1,81 +1,41 @@
 ---
-- name: Install Jenkins for Spring Boot with Java 21
-  hosts: jenkins
+- name: Complete Jenkins Installation (Direct .deb)
+  hosts: jenkins_server
   become: true
+  gather_facts: true  # Make sure we collect all facts
+
   tasks:
-    # Install Java 21 and Maven without updating cache first
-    - name: Install Java 21 and Maven
+    # Update package list
+    - name: Update apt cache
       apt:
-        name:
-          - openjdk-21-jdk
-          - maven
-          - git
-          - curl
+        update_cache: yes
+        cache_valid_time: 3600
+
+    # Install Java 21 JDK
+    - name: Install Java 21 JDK
+      apt:
+        name: openjdk-21-jdk
         state: present
-        update_cache: no  # Skip the initial cache update
+        update_cache: yes
 
-    # Create Jenkins user
-    - name: Create Jenkins user
-      user:
-        name: jenkins
-        shell: /bin/bash
-        system: yes
-        create_home: yes
-        home: /var/lib/jenkins
+    # Install Maven
+    - name: Install Maven
+      apt:
+        name: maven
+        state: present
 
-    # Create required directories
-    - name: Create Jenkins directories
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: jenkins
-        group: jenkins
-        mode: '0755'
-      with_items:
-        - /usr/share/jenkins
-        - /var/lib/jenkins
-        - /var/log/jenkins
-
-    # Download Jenkins WAR file directly
-    - name: Download Jenkins WAR
+    # Download Jenkins .deb package directly
+    - name: Download Jenkins
       get_url:
-        url: https://get.jenkins.io/war-stable/latest/jenkins.war
-        dest: /usr/share/jenkins/jenkins.war
-        mode: '0644'
-        force: yes
-      register: download_jenkins
-      retries: 3
-      delay: 5
-
-    # Create systemd service
-    - name: Create Jenkins service
-      copy:
-        dest: /etc/systemd/system/jenkins.service
-        content: |
-          [Unit]
-          Description=Jenkins Continuous Integration Server
-          After=network.target
-
-          [Service]
-          User=jenkins
-          WorkingDirectory=/var/lib/jenkins
-          Environment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64"
-          Environment="JENKINS_HOME=/var/lib/jenkins"
-          ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /usr/share/jenkins/jenkins.war --httpPort=8080
-          Restart=on-failure
-          SuccessExitStatus=143
-
-          [Install]
-          WantedBy=multi-user.target
+        url: https://pkg.jenkins.io/debian-stable/binary/jenkins_2.440.1_all.deb
+        dest: /tmp/jenkins.deb
         mode: '0644'
 
-    # Set permissions
-    - name: Set permissions
-      file:
-        path: /var/lib/jenkins
-        owner: jenkins
-        group: jenkins
-        recurse: yes
+    # Install Jenkins from .deb file
+    - name: Install Jenkins from .deb
+      apt:
+        deb: /tmp/jenkins.deb
+        install_recommends: no
 
     # Start and enable Jenkins
     - name: Start Jenkins service
@@ -83,22 +43,65 @@
         name: jenkins
         state: started
         enabled: yes
-        daemon_reload: yes
+
+    # Simple firewall rule (skipped if UFW not installed)
+    - name: Check if UFW is installed
+      stat:
+        path: /usr/sbin/ufw
+      register: ufw_installed
+
+    - name: Allow Jenkins port in firewall
+      ufw:
+        rule: allow
+        port: '8080'
+        proto: tcp
+      when: ufw_installed.stat.exists
+
+    # Wait for Jenkins to be fully up
+    - name: Wait for Jenkins to be ready
+      uri:
+        url: http://localhost:8080
+        status_code: 200, 403
+      register: jenkins_ready
+      until: jenkins_ready.status in [200, 403]
+      retries: 10
+      delay: 10
+      ignore_errors: yes
 
     # Get initial admin password
     - name: Get initial admin password
       command: cat /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_password
       changed_when: false
-      retries: 10
+      retries: 5
       delay: 10
       until: jenkins_password.rc == 0
 
-    - name: Show Jenkins info
+    # Show installation summary
+    - name: Show installation summary
       debug:
         msg: |
-          Jenkins is running!
-          Access: http://{{ inventory_hostname }}:8080
-          Initial admin password: {{ jenkins_password.stdout }}
-          To get the password again, run:
-            sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+          ===== Jenkins Installation Complete =====
+          Jenkins is now running on: http://{{ ansible_host }}:8080
+          Initial admin password: {{ jenkins_password.stdout | default('Run: sudo cat /var/lib/jenkins/secrets/initialAdminPassword') }}
+          =======================================
+
+    # Verify installations
+    - name: Verify Java installation
+      command: java -version
+      register: java_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Verify Maven installation
+      command: mvn -version
+      register: maven_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Show versions
+      debug:
+        msg:
+          - "Java version: {{ java_version.stderr | default('Not found') | regex_replace('\n', '') }}"
+          - "Maven version: {{ maven_version.stdout | default('Not found') | regex_replace('\n', '') }}"
+          - "Jenkins service status: {{ 'Running' if jenkins_ready is defined and jenkins_ready.status in [200, 403] else 'Not running' }}"

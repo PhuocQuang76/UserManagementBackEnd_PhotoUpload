@@ -1,0 +1,44 @@
+---
+- name: Simple Backend Installation
+  hosts: backend_server
+  become: true
+
+  tasks:
+    # Update package list
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    # Install Java 21 JRE (headless)
+    - name: Install Java 21 JRE (headless)
+      apt:
+        name: openjdk-21-jdk-headless  # Using JDK for Maven compatibility
+        state: present
+        update_cache: yes
+
+    # Install Maven
+    - name: Install Maven
+      apt:
+        name: maven
+        state: present
+        update_cache: yes
+
+    # Verify installations
+    - name: Check Java version
+      command: java -version
+      register: java_version
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Check Maven version
+      command: mvn -version
+      register: maven_version
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Show versions
+      debug:
+        msg:
+          - "Java version: {{ java_version.stderr | default('Not found') | regex_replace('\n', '') }}"
+          - "Maven version: {{ maven_version.stdout | default('Not found') | regex_replace('\n', '') }}"

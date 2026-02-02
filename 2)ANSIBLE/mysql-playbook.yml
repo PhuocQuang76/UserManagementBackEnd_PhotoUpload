@@ -1,6 +1,6 @@
 ---
 - name: Configure MySQL to allow remote connections
-  hosts: mysql_servers
+  hosts: mysql_server
   become: true
   tasks:
     - name: Update MySQL bind address
