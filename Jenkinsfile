@@ -11,17 +11,25 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Source Code Webhook') {
+        stage('Checkout') {
             steps {
-                script {
-                   checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: '14ebfc46-00ee-4ac8-b8a4-841a3c5b0d50', url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git']])
-                }
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git',
+                        credentialsId: '14ebfc46-00ee-4ac8-b8a4-841a3c5b0d50'
+                    ]]
+                ])
             }
         }
 
-        stage('SCM') {
+        stage('Build') {
             steps {
-                git branch: 'main', url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
+                // Add your build steps here
+                sh 'mvn clean package'  // For Maven
+                // or sh './gradlew build'  // For Gradle
             }
         }
     }
