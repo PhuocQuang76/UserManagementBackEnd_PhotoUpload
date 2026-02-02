@@ -120,7 +120,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+
+        // Handle null or empty allowedOrigins
+        if (allowedOrigins == null || allowedOrigins.length == 0 || (allowedOrigins.length == 1 && "*".equals(allowedOrigins[0]))) {
+            configuration.setAllowedOriginPatterns(List.of("*")); // Allow all origins
+        } else {
+            configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+        }
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
