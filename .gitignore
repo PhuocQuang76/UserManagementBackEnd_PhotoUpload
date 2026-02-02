@@ -37,3 +37,4 @@ terraform.rc
 #.ini
 
 .DS_Store.idea/
+.idea/workspace.xml

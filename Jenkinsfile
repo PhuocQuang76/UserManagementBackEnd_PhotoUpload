@@ -11,7 +11,7 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Source Code') {
+        stage('Checkout Source Code Webhook') {
             steps {
                 script {
                    checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: '14ebfc46-00ee-4ac8-b8a4-841a3c5b0d50', url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git']])
