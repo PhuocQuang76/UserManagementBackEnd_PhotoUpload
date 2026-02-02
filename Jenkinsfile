@@ -4,10 +4,14 @@ pipeline {
     environment {
         EC2_IP = '44.222.137.249'
         EC2_USER = 'ubuntu'
-        APP_JAR = 'user-management-0.0.1-SNAPSHOT.jar'  // Fixed JAR filename
+        APP_JAR = 'user-management-0.0.1-SNAPSHOT.jar'
         REPO_URL = 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
         SSH_KEY = '/var/lib/jenkins/userkey.pem'
         SSH_USER = 'ubuntu'
+        MYSQL_HOST = '35.169.107.151'
+        MYSQL_DB = 'photoupload'
+        MYSQL_USER = 'admin'
+        MYSQL_PASSWORD = 'admin'
     }
 
     stages {
@@ -18,83 +22,108 @@ pipeline {
                     extensions: [],
                     userRemoteConfigs: [[
                         credentialsId: '048bdac1-1fbb-4ba9-926e-cc0ff3abee5b',
-                        url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
+                        url: REPO_URL
                     ]]
                 )
+            }
+        }
+
+        stage('Configure Application') {
+            steps {
+                script {
+                    // Update application.properties with database configuration
+                    sh """
+                        cat > src/main/resources/application.properties << EOL
+                        spring.datasource.url=jdbc:mysql://${MYSQL_HOST}:3306/${MYSQL_DB}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+                        spring.datasource.username=${MYSQL_USER}
+                        spring.datasource.password=${MYSQL_PASSWORD}
+                        spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+                        spring.jpa.hibernate.ddl-auto=update
+                        server.port=8080
+                        EOL
+                    """
+                }
             }
         }
 
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
-                // Verify the JAR file was created
                 sh 'ls -la target/'
             }
         }
 
-        stage('Copy Jar to EC2 instance') {
+        stage('Deploy to EC2') {
             steps {
                 script {
+                    // Install Java if not present
                     sh """
-                        # Show current directory and JAR file
-                        echo "Current directory: \$(pwd)"
-                        echo "Looking for JAR file: target/${APP_JAR}"
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "
+                            command -v java >/dev/null 2>&1 || {
+                                echo 'Java not found, installing...'
+                                sudo apt update && sudo apt install -y openjdk-17-jdk
+                            }
+                        "
+                    """
 
-                        # List all JAR files in target directory
-                        echo "Available JAR files in target/:"
-                        ls -la target/*.jar || echo "No JAR files found in target/"
+                    // Copy JAR file
+                    sh """
+                        scp -o StrictHostKeyChecking=no -i ${SSH_KEY} "target/${APP_JAR}" ${SSH_USER}@${EC2_IP}:/home/ubuntu/
+                    """
 
-                        # Copy the JAR file
-                        echo "Copying to EC2..."
-                        scp -v -i ${SSH_KEY} "target/${APP_JAR}" ${SSH_USER}@${EC2_IP}:/home/ubuntu/
+                    // Set permissions and start application
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "
+                            # Stop existing instance
+                            pkill -f ${APP_JAR} || echo 'No existing process found'
 
-                        # Verify the file was copied
-                        echo "Verifying file on remote server:"
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ls -la /home/ubuntu/${APP_JAR}"
+                            # Set permissions
+                            chmod +x /home/ubuntu/${APP_JAR}
+
+                            # Start new instance
+                            nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &
+
+                            # Wait for startup
+                            sleep 10
+
+                            # Verify
+                            if pgrep -f ${APP_JAR} >/dev/null; then
+                                echo 'Application started successfully!'
+                                echo 'Application is running on: http://${EC2_IP}:8080'
+                            else
+                                echo 'Failed to start application'
+                                echo 'Last 50 lines of log:'
+                                tail -n 50 /home/ubuntu/app.log
+                                exit 1
+                            fi
+                        "
                     """
                 }
             }
         }
+    }
 
-       stage('Start Application') {
-           steps {
-               script {
-                   sh """
-                       # First, kill any existing Java process running the JAR
-                       echo "Stopping any existing application..."
-                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f ${APP_JAR} || echo 'No existing process found'"
-
-                       # Start the application
-                       echo "Starting the application..."
-                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &"
-
-                       # Wait for the application to start
-                       sleep 10
-
-                       # Check if the application is running
-                       echo "Checking if application is running..."
-                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f ${APP_JAR} && echo 'Application is running' || echo 'Application failed to start'"
-
-                       # Show recent logs
-                       echo "Recent application logs:"
-                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 20 /home/ubuntu/app.log"
-                   """
-               }
-           }
-       }
-   }
-
-   post {
-       success {
-           echo 'Deployment completed successfully!'
-           echo "Application is running on: http://${EC2_IP}:8080"
-       }
-       failure {
-           echo 'Deployment failed. Check the logs for details.'
-           // Show the last 50 lines of the log if the deployment fails
-           sh """
-               ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 50 /home/ubuntu/app.log" || echo "Could not retrieve logs"
-           """
-       }
-   }
+    post {
+        always {
+            // Clean up workspace
+            cleanWs()
+        }
+        success {
+            echo 'Deployment completed successfully!'
+            echo "Application is running on: http://${EC2_IP}:8080"
+        }
+        failure {
+            echo 'Deployment failed. Check the logs for details.'
+            script {
+                sh """
+                    ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "
+                        echo '=== Application Logs ==='
+                        tail -n 100 /home/ubuntu/app.log || echo 'Could not retrieve logs'
+                        echo '=== Java Process Status ==='
+                        pgrep -f ${APP_JAR} || echo 'No running Java process found'
+                    "
+                """
+            }
+        }
+    }
 }
