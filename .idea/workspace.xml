@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8137f2ac-ea06-4e3e-9920-793d5e90891f" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/1)TERRAFORM/ec2.tf" beforeDir="false" afterPath="$PROJECT_DIR$/1)TERRAFORM/ec2.tf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/1)TERRAFORM/output.tf" beforeDir="false" afterPath="$PROJECT_DIR$/1)TERRAFORM/output.tf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" beforeDir="false" afterPath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/jenkins-playbook.yml" beforeDir="false" afterPath="$PROJECT_DIR$/2)ANSIBLE/jenkins-playbook.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/mysql-playbook.yml" beforeDir="false" afterPath="$PROJECT_DIR$/2)ANSIBLE/mysql-playbook.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
-    </list>
+    <list default="true" id="8137f2ac-ea06-4e3e-9920-793d5e90891f" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
