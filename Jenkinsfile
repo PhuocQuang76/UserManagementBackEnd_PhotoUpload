@@ -56,36 +56,45 @@ pipeline {
             }
         }
 
-        stage('Start the application') {
-            steps {
-                script {
-                    sh """
-                        # First, kill any existing Java process running the JAR
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f ${APP_JAR} || echo 'No existing process found'"
+       stage('Start Application') {
+           steps {
+               script {
+                   sh """
+                       # First, kill any existing Java process running the JAR
+                       echo "Stopping any existing application..."
+                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f ${APP_JAR} || echo 'No existing process found'"
 
-                        # Start the application
-                        echo "Starting the application..."
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &"
+                       # Start the application
+                       echo "Starting the application..."
+                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &"
 
-                        # Wait for the application to start
-                        sleep 10
+                       # Wait for the application to start
+                       sleep 10
 
-                        # Check if the application is running
-                        echo "Checking if application is running..."
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f ${APP_JAR} && echo 'Application is running' || echo 'Application failed to start'"
-                    """
-                }
-            }
-        }
-    }
+                       # Check if the application is running
+                       echo "Checking if application is running..."
+                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f ${APP_JAR} && echo 'Application is running' || echo 'Application failed to start'"
 
-    post {
-        success {
-            echo 'Deployment completed successfully!'
-            echo "Application is running on: http://${EC2_IP}:8080"
-        }
-        failure {
-            echo 'Deployment failed. Check the logs for details.'
-        }
-    }
+                       # Show recent logs
+                       echo "Recent application logs:"
+                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 20 /home/ubuntu/app.log"
+                   """
+               }
+           }
+       }
+   }
+
+   post {
+       success {
+           echo 'Deployment completed successfully!'
+           echo "Application is running on: http://${EC2_IP}:8080"
+       }
+       failure {
+           echo 'Deployment failed. Check the logs for details.'
+           // Show the last 50 lines of the log if the deployment fails
+           sh """
+               ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 50 /home/ubuntu/app.log" || echo "Could not retrieve logs"
+           """
+       }
+   }
 }
