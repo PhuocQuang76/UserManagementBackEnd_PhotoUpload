@@ -23,11 +23,19 @@ pipeline {
             }
         }
 
-        stage('Copy Jar to EC2 instatnce') {
+        stage('Copy to EC2') {
             steps {
-                sh """
-                    scp -i /var/lib/jenkins/userkey.pem /var/lib/jenkins/workspace/user-management-backend/target/user-management-0.0.1-SNAPSHOT.jar ubuntu@44.222.137.249:/home/ubuntu //copy jar file from Jenkins 																																		       //to java server
-                """
+                script {
+                    // Store the JAR file path in a variable
+                    def jarFile = findFiles(glob: 'target/*.jar')[0].path
+                    echo "JAR file found at: ${jarFile}"
+
+                    // Copy the JAR file to the EC2 instance
+                    sh "scp -i /var/lib/jenkins/userkey.pem ${jarFile} ubuntu@44.222.137.249:/home/ubuntu/"
+
+                    // Verify the file was copied
+                    sh "ssh -i /var/lib/jenkins/userkey.pem ubuntu@44.222.137.249 'ls -la /home/ubuntu/'"
+                }
             }
         }
 
