@@ -1,0 +1,10 @@
+
+
+# Install Java and Maven on backend and Jenkins servers
+ansible-playbook -i inventory.ini java_maven.yml
+
+# Configure MySQL
+ansible-playbook -i inventory.ini mysql.yml
+
+# Install Jenkins
+ansible-playbook -i inventory.ini jenkins.yml
