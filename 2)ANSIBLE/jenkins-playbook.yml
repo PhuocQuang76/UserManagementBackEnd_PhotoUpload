@@ -2,7 +2,7 @@
 - name: Complete Jenkins Installation (Direct .deb)
   hosts: jenkins_server
   become: true
-  gather_facts: true  # Make sure we collect all facts
+  gather_facts: true
 
   tasks:
     # Update package list
@@ -24,48 +24,40 @@
         name: maven
         state: present
 
-    # Download Jenkins .deb package directly
-    - name: Download Jenkins
-      get_url:
-        url: https://pkg.jenkins.io/debian-stable/binary/jenkins_2.440.1_all.deb
-        dest: /tmp/jenkins.deb
-        mode: '0644'
+    # Jenkins Repository and Installation
+    - name: Add Jenkins repository key
+      apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+        state: present
 
-    # Install Jenkins from .deb file
-    - name: Install Jenkins from .deb
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+        update_cache: yes
+
+    - name: Install Jenkins
       apt:
-        deb: /tmp/jenkins.deb
-        install_recommends: no
+        name: jenkins
+        state: present
+        update_cache: yes
 
-    # Start and enable Jenkins
-    - name: Start Jenkins service
-      systemd:
+    - name: Ensure Jenkins service is running
+      service:
         name: jenkins
         state: started
         enabled: yes
 
-    # Simple firewall rule (skipped if UFW not installed)
-    - name: Check if UFW is installed
-      stat:
-        path: /usr/sbin/ufw
-      register: ufw_installed
-
-    - name: Allow Jenkins port in firewall
-      ufw:
-        rule: allow
-        port: '8080'
-        proto: tcp
-      when: ufw_installed.stat.exists
-
-    # Wait for Jenkins to be fully up
-    - name: Wait for Jenkins to be ready
+    # Wait for Jenkins to be ready
+    - name: Wait for Jenkins to start
       uri:
         url: http://localhost:8080
-        status_code: 200, 403
+        status_code: 403
       register: jenkins_ready
-      until: jenkins_ready.status in [200, 403]
-      retries: 10
+      retries: 12
       delay: 10
+      until: jenkins_ready.status == 200 or jenkins_ready.status == 403
       ignore_errors: yes
 
     # Get initial admin password
@@ -83,7 +75,7 @@
         msg: |
           ===== Jenkins Installation Complete =====
           Jenkins is now running on: http://{{ ansible_host }}:8080
-          Initial admin password: {{ jenkins_password.stdout | default('Run: sudo cat /var/lib/jenkins/secrets/initialAdminPassword') }}
+          Initial admin password: {{ jenkins_password.stdout | trim }}
           =======================================
 
     # Verify installations
@@ -102,6 +94,6 @@
     - name: Show versions
       debug:
         msg:
-          - "Java version: {{ java_version.stderr | default('Not found') | regex_replace('\n', '') }}"
-          - "Maven version: {{ maven_version.stdout | default('Not found') | regex_replace('\n', '') }}"
+          - "Java version: {{ (java_version.stderr | default(java_version.stdout) | regex_replace('\n', ' ')) | trim }}"
+          - "Maven version: {{ (maven_version.stderr | default(maven_version.stdout) | regex_replace('\n', ' ')) | trim }}"
           - "Jenkins service status: {{ 'Running' if jenkins_ready is defined and jenkins_ready.status in [200, 403] else 'Not running' }}"
