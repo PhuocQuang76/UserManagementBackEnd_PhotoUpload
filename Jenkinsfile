@@ -45,7 +45,6 @@ pipeline {
             }
         }
 
-
         stage('Start Application') {
             steps {
                 script {
@@ -58,7 +57,7 @@ pipeline {
                             ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "\
                                 cd /home/ubuntu && \
                                 nohup java -jar ${APP_JAR} > /dev/null 2>&1 & \
-                                echo \$! > app.pid"
+                                echo \\\$! > app.pid"
                         """
 
                         // Give it time to start
@@ -66,8 +65,7 @@ pipeline {
 
                         // Verify if the application is running
                         def status = sh(
-                            script: "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} " +
-                                   "'if [ -f /home/ubuntu/app.pid ] && ps -p \\$(cat /home/ubuntu/app.pid) > /dev/null 2>&1; then echo \"RUNNING\"; else echo \"NOT_RUNNING\"; fi'",
+                            script: "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} 'if [ -f /home/ubuntu/app.pid ] && ps -p \\$(cat /home/ubuntu/app.pid) > /dev/null 2>&1; then echo RUNNING; else echo NOT_RUNNING; fi'",
                             returnStdout: true
                         ).trim()
 
@@ -83,6 +81,7 @@ pipeline {
                 }
             }
         }
+
     }
 
     post {
