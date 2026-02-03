@@ -1,0 +1,62 @@
+---
+- name: Install Angular 20.3.7 on EC2
+  hosts: frontend_server
+  become: yes
+  vars:
+    node_version: "20.x"
+    angular_cli_version: "20.3.7"
+
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install required system packages
+      apt:
+        name:
+          - curl
+          - git
+          - build-essential
+        state: present
+
+    - name: Add NodeSource repository for Node.js 20.x
+      shell: curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+      args:
+        creates: "/etc/apt/sources.list.d/nodesource.list"
+
+    - name: Install Node.js 20.x
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Install Angular CLI {{ angular_cli_version }} globally
+      npm:
+        name: "@angular/cli@{{ angular_cli_version }}"
+        global: yes
+
+    - name: Get Node.js version
+      command: node -v
+      register: node_version
+      changed_when: false
+
+    - name: Get npm version
+      command: npm -v
+      register: npm_version
+      changed_when: false
+
+    - name: Get Angular CLI version
+      command: ng version --json
+      register: ng_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Display installation summary
+      debug:
+        msg: |
+          ===================================
+          Installation Successful!
+          ===================================
+          Node.js version: {{ node_version.stdout }}
+          npm version: {{ npm_version.stdout }}
+          Angular CLI version: {{ angular_cli_version }}
+          ===================================

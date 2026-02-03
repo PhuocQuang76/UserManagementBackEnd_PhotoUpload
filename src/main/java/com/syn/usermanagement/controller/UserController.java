@@ -23,7 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "#{'http://' + '${frontEndIP}' + ':4200'}")
 public class UserController {
 
     private final UserService userService;

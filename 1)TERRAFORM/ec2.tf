@@ -32,6 +32,18 @@ resource "aws_instance" "backend_server" {
   }
 }
 
+# EC2 Instance for Angular Application
+resource "aws_instance" "frontend_server" {
+  ami                    = var.ami_value
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.frontend_sg.id]
+  subnet_id              = aws_subnet.public.id
+
+  tags = {
+    Name = "frontend-server"
+  }
+}
 
 # EC2 Instance for Jenkins Server
 resource "aws_instance" "jenkins_server" {

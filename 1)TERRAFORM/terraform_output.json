@@ -2,41 +2,51 @@
   "backend_private_ip": {
     "sensitive": false,
     "type": "string",
-    "value": "10.0.1.19"
+    "value": "10.0.1.150"
   },
   "backend_public_ip": {
     "sensitive": false,
     "type": "string",
-    "value": "98.93.136.17"
+    "value": "3.236.189.148"
+  },
+  "frontend_private_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "10.0.1.100"
+  },
+  "frontend_public_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "54.236.59.93"
   },
   "jenkins_private_ip": {
     "sensitive": false,
     "type": "string",
-    "value": "10.0.1.231"
+    "value": "10.0.1.107"
   },
   "jenkins_public_ip": {
     "sensitive": false,
     "type": "string",
-    "value": "44.210.122.99"
+    "value": "98.84.47.116"
   },
   "jenkins_ssh": {
     "sensitive": false,
     "type": "string",
-    "value": "ssh -i userkey.pem ubuntu@44.210.122.99"
+    "value": "ssh -i userkey.pem ubuntu@98.84.47.116"
   },
   "jenkins_url": {
     "sensitive": false,
     "type": "string",
-    "value": "http://44.210.122.99:8080"
+    "value": "http://98.84.47.116:8080"
   },
   "mysql_private_ip": {
     "sensitive": false,
     "type": "string",
-    "value": "10.0.1.219"
+    "value": "10.0.1.119"
   },
   "mysql_public_ip": {
     "sensitive": false,
     "type": "string",
-    "value": "13.223.0.16"
+    "value": "44.192.37.36"
   }
 }

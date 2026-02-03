@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        EC2_IP = '44.222.137.249'
-        EC2_USER = 'ubuntu'
+        EC2_IP = '100.27.198.489'
         APP_JAR = 'user-management-0.0.1-SNAPSHOT.jar'  // Fixed JAR filename
         REPO_URL = 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
         SSH_KEY = '/var/lib/jenkins/userkey.pem'
@@ -13,14 +12,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scmGit(
-                    branches: [[name: '*/main']],
-                    extensions: [],
-                    userRemoteConfigs: [[
-                        credentialsId: '048bdac1-1fbb-4ba9-926e-cc0ff3abee5b',
-                        url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
-                    ]]
-                )
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[
+                credentialsId: 'git_credetial',
+                url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git']])
             }
         }
 
@@ -56,38 +50,21 @@ pipeline {
             }
         }
 
-//        stage('Start Application') {
-//            steps {
-//                script {
-//                    sh """
-//                        # First, kill any existing Java process running the JAR
-//                        echo "Stopping any existing application..."
-//                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f ${APP_JAR} || echo 'No existing process found'"
-//
-//                        # Start the application
-//                        echo "Starting the application..."
-//                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &"
-//
-//                        # Wait for the application to start
-//                        sleep 10
-//
-//                        # Check if the application is running
-//                        echo "Checking if application is running..."
-//                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f ${APP_JAR} && echo 'Application is running' || echo 'Application failed to start'"
-//
-//                        # Show recent logs
-//                        echo "Recent application logs:"
-//                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 20 /home/ubuntu/app.log"
-//                    """
-//                }
-//            }
-//        }
+       stage('Start Application') {
+           steps {
+               script {
+                   sh """
+                      ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR > /dev/null 2>&1 &"
+                   """
+               }
+           }
+       }
    }
 
    post {
        success {
            echo 'Deployment completed successfully!'
-           echo "Application is running on: http://${EC2_IP}:8080"
+           echo "Application is running on: http://${EC2_IP}:8091"
        }
        failure {
            echo 'Deployment failed. Check the logs for details.'
