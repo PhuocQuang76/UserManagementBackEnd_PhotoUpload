@@ -45,32 +45,15 @@ pipeline {
             }
         }
 
-        stage('Start Application') {
-            steps {
-                script {
-                    sh """
-                        # Kill any existing Java process
-                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f 'java -jar /home/ubuntu/${APP_JAR}' || true"
-
-                        # Create log file
-                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "touch /home/ubuntu/app.log"
-
-                        # Start the application with nohup and log to a file
-                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "cd /home/ubuntu && nohup java -jar ${APP_JAR} > app.log 2>&1 &"
-
-                        # Give it time to start
-                        sleep 15
-
-                        # Check if application is running
-                        if ! ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f 'java -jar /home/ubuntu/${APP_JAR}'"; then
-                            echo "Application failed to start. Checking logs..."
-                            ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "cat /home/ubuntu/app.log" || true
-                            exit 1
-                        fi
-                    """
-                }
-            }
-        }
+       stage('Start Application') {
+          steps {
+              script {
+                  sh """
+                     ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR > /dev/null 2>&1 &"
+                  """
+              }
+          }
+      }
     }
 
     post {
