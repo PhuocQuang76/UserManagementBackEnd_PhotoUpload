@@ -10,11 +10,19 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'git_credetial', url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git']])
-            }
-        }
+       stage('Checkout') {
+                   steps {
+                       checkout([
+                           $class: 'GitSCM',
+                           branches: [[name: 'main']],  // Changed from 'master' to 'main'
+                           extensions: [],
+                           userRemoteConfigs: [[
+                               credentialsId: 'git_credetial',
+                               url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
+                           ]]
+                       ])
+                   }
+               }
 
         stage('Build') {
             steps {
