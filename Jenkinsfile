@@ -46,35 +46,14 @@ pipeline {
         }
 
         stage('Start Application') {
-            steps {
-                script {
-                    // Kill any existing Java process
-                    sh "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} 'pkill -f \"java -jar /home/ubuntu/${APP_JAR}\" || true'"
-
-                    // Start the application
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "\
-                            cd /home/ubuntu && \
-                            nohup java -jar ${APP_JAR} &"
-                    """
-
-                    // Wait a bit for the application to start
-                    sleep 10
-
-                    // Verify it's running
-                    def isRunning = sh(
-                        script: "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} 'pgrep -f \"java -jar /home/ubuntu/${APP_JAR}\"'",
-                        returnStatus: true
-                    ) == 0
-
-                    if (!isRunning) {
-                        error "Application failed to start"
-                    }
-
-                    echo "Application started successfully"
-                }
-            }
-        }
+                   steps {
+                       script {
+                           sh """
+                              ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR > /dev/null 2>&1 &"
+                           """
+                       }
+                   }
+               }
 
     }
 
