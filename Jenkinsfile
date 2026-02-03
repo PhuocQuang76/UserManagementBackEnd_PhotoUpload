@@ -8,7 +8,7 @@ pipeline {
         SSH_KEY = '/var/lib/jenkins/userkey.pem'
         SSH_USER = 'ubuntu'
         // Add SSH options to avoid host key verification
-        SSH_OPTS = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
     }
 
     stages {
