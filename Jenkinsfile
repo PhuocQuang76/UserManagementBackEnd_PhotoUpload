@@ -45,30 +45,41 @@ pipeline {
             }
         }
 
+
         stage('Start Application') {
             steps {
                 script {
-                    sh """
-                        # Kill any existing Java process
-                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f 'java -jar /home/ubuntu/${APP_JAR}' || true"
+                    try {
+                        // Kill any existing Java process
+                        sh "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} 'pkill -f \"java -jar /home/ubuntu/${APP_JAR}\" || true'"
 
-                        # Create log file and start the application
-                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "\
-                            touch /home/ubuntu/app.log && \
-                            cd /home/ubuntu && \
-                            nohup java -jar ${APP_JAR} > app.log 2>&1 & \
-                            echo \$! > app.pid"
+                        // Start the application in the background and get the PID
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "\
+                                cd /home/ubuntu && \
+                                nohup java -jar ${APP_JAR} > /dev/null 2>&1 & \
+                                echo \$! > app.pid"
+                        """
 
-                        # Give it time to start
+                        // Give it time to start
                         sleep 10
 
-                        # Check if application is running
-                        if ! ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f 'java -jar /home/ubuntu/${APP_JAR}'"; then
-                            echo "Application failed to start. Checking logs..."
-                            ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "cat /home/ubuntu/app.log" || true
-                            exit 1
-                        fi
-                    """
+                        // Verify if the application is running
+                        def status = sh(
+                            script: "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} " +
+                                   "'if [ -f /home/ubuntu/app.pid ] && ps -p \\$(cat /home/ubuntu/app.pid) > /dev/null 2>&1; then echo \"RUNNING\"; else echo \"NOT_RUNNING\"; fi'",
+                            returnStdout: true
+                        ).trim()
+
+                        if (status != "RUNNING") {
+                            error "Application failed to start. Check the EC2 instance for details."
+                        }
+
+                        echo "Application started successfully"
+
+                    } catch (Exception e) {
+                        error "Failed to start application: ${e.message}"
+                    }
                 }
             }
         }
