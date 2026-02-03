@@ -7,12 +7,21 @@ pipeline {
         REPO_URL = 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
         SSH_KEY = '/var/lib/jenkins/userkey.pem'
         SSH_USER = 'ubuntu'
+        // Add these SSH options
+        SSH_OPTS = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'gitCredential', url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git']])
+                checkout scmGit(
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'gitCredential',
+                        url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
+                    ]]
+                )
             }
         }
 
