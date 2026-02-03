@@ -7,7 +7,7 @@ pipeline {
         REPO_URL = 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
         SSH_KEY = '/var/lib/jenkins/userkey.pem'
         SSH_USER = 'ubuntu'
-        // Add these SSH options
+        // Add SSH options to disable strict host key checking
         SSH_OPTS = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     }
 
@@ -41,9 +41,9 @@ pipeline {
                         echo "Available JAR files in target/:"
                         ls -la target/*.jar || echo "No JAR files found in target/"
                         echo "Copying to EC2..."
-                        scp -v -i ${SSH_KEY} "target/${APP_JAR}" ${SSH_USER}@${EC2_IP}:/home/ubuntu/
+                        scp ${SSH_OPTS} -i ${SSH_KEY} "target/${APP_JAR}" ${SSH_USER}@${EC2_IP}:/home/ubuntu/
                         echo "Verifying file on remote server:"
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ls -la /home/ubuntu/${APP_JAR}"
+                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ls -la /home/ubuntu/${APP_JAR}"
                     """
                 }
             }
@@ -54,16 +54,16 @@ pipeline {
                 script {
                     sh """
                         # Kill any existing Java process running the app
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f 'java -jar /home/ubuntu/${APP_JAR}' || true"
+                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pkill -f 'java -jar /home/ubuntu/${APP_JAR}' || true"
 
                         # Start the application with nohup and log to a file
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &"
+                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &"
 
                         # Give it a moment to start
                         sleep 5
 
                         # Verify the process is running
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f 'java -jar /home/ubuntu/${APP_JAR}' || { echo 'Process failed to start'; exit 1; }"
+                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "pgrep -f 'java -jar /home/ubuntu/${APP_JAR}' || { echo 'Process failed to start'; exit 1; }"
                     """
                 }
             }
@@ -80,9 +80,9 @@ pipeline {
             echo 'Deployment failed. Check the logs for details.'
             sh """
                 echo "=== Application Logs ==="
-                ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 50 /home/ubuntu/app.log" || echo "Could not retrieve logs"
+                ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 50 /home/ubuntu/app.log" || echo "Could not retrieve logs"
                 echo "=== Java Process Status ==="
-                ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ps aux | grep java" || true
+                ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ps aux | grep java" || true
             """
         }
     }
