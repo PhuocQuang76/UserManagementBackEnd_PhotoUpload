@@ -45,15 +45,15 @@ pipeline {
             }
         }
 
-       stage('Start Application') {
-          steps {
-              script {
-                  sh """
-                     ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR > /dev/null 2>&1 &"
-                  """
-              }
-          }
-      }
+        stage('Start Application') {
+            steps {
+                script {
+                    sh """
+                       ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /home/ubuntu/app.log 2>&1 &"
+                    """
+                }
+            }
+        }
     }
 
     post {
