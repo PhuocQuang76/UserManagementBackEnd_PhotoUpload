@@ -1,5 +1,5 @@
 ---
-- name: Complete Jenkins Installation (Direct .deb)
+- name: Complete Jenkins Installation with DevOps Tools
   hosts: jenkins_server
   become: true
   gather_facts: true
@@ -10,6 +10,24 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
+
+    # Install basic dependencies
+    - name: Install basic dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - unzip
+          - git
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - lsb-release
+          - python3
+          - python3-pip
+          - python3-venv
+        state: present
 
     # Install Java 21 JDK
     - name: Install Java 21 JDK
@@ -22,6 +40,55 @@
     - name: Install Maven
       apt:
         name: maven
+        state: present
+
+    # Install Node.js and npm
+    - name: Add NodeSource repository for Node.js 20.x
+      shell: curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      args:
+        creates: /etc/apt/sources.list.d/nodesource.list
+
+    - name: Install Node.js 20.x
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+
+    - name: Install Angular CLI globally
+      npm:
+        name: "@angular/cli"
+        global: yes
+        state: present
+
+    # Install Terraform
+    - name: Download Terraform
+      get_url:
+        url: https://releases.hashicorp.com/terraform/1.8.4/terraform_1.8.4_linux_amd64.zip
+        dest: /tmp/terraform.zip
+        mode: '0644'
+
+    - name: Unzip Terraform
+      unarchive:
+        src: /tmp/terraform.zip
+        dest: /usr/local/bin/
+        remote_src: yes
+        mode: '0755'
+
+    - name: Clean up Terraform zip
+      file:
+        path: /tmp/terraform.zip
+        state: absent
+
+    # Install Ansible via apt
+    - name: Add Ansible PPA
+      apt_repository:
+        repo: "ppa:ansible/ansible"
+        state: present
+        update_cache: yes
+
+    - name: Install Ansible via apt
+      apt:
+        name: ansible
         state: present
 
     # Jenkins Repository and Installation
@@ -49,51 +116,11 @@
         state: started
         enabled: yes
 
-    # Wait for Jenkins to be ready
-    - name: Wait for Jenkins to start
-      uri:
-        url: http://localhost:8080
-        status_code: 403
-      register: jenkins_ready
-      retries: 12
-      delay: 10
-      until: jenkins_ready.status == 200 or jenkins_ready.status == 403
-      ignore_errors: yes
-
-    # Get initial admin password
-    - name: Get initial admin password
-      command: cat /var/lib/jenkins/secrets/initialAdminPassword
-      register: jenkins_password
-      changed_when: false
-      retries: 5
-      delay: 10
-      until: jenkins_password.rc == 0
-
-    # Show installation summary
+    # Simple completion message
     - name: Show installation summary
       debug:
         msg: |
           ===== Jenkins Installation Complete =====
-          Jenkins is now running on: http://{{ ansible_host }}:8080
-          Initial admin password: {{ jenkins_password.stdout | trim }}
+          Jenkins is running on: http://{{ ansible_host }}:8080
+          Access Jenkins UI to complete setup
           =======================================
-
-    # Verify installations
-    - name: Verify Java installation
-      command: java -version
-      register: java_version
-      changed_when: false
-      ignore_errors: yes
-
-    - name: Verify Maven installation
-      command: mvn -version
-      register: maven_version
-      changed_when: false
-      ignore_errors: yes
-
-    - name: Show versions
-      debug:
-        msg:
-          - "Java version: {{ (java_version.stderr | default(java_version.stdout) | regex_replace('\n', ' ')) | trim }}"
-          - "Maven version: {{ (maven_version.stderr | default(maven_version.stdout) | regex_replace('\n', ' ')) | trim }}"
-          - "Jenkins service status: {{ 'Running' if jenkins_ready is defined and jenkins_ready.status in [200, 403] else 'Not running' }}"

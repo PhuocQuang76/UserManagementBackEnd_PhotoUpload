@@ -1,0 +1,14 @@
+
+    ng serve  ----> 4200    development
+
+    ---> Build ------> EC2
+
+            index.html
+    Req come   --->  angular/index.html
+    Resp  <-------------            |
+    In deployment                   |
+        FrontEnd: Ng serve will do thing for you.
+                                    |
+    In productoion:                 |
+        http -> 80n port            |
+        Browser  -> nginx ->  <-----|

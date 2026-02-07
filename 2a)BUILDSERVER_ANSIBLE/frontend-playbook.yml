@@ -1,0 +1,134 @@
+---
+- name: Install Angular 20.3.7 and Nginx on EC2
+  hosts: frontend_server
+  become: yes
+  vars:
+    node_version: "20.x"
+    angular_cli_version: "20.3.7"
+    nginx_user: "www-data"
+    nginx_group: "www-data"
+
+  tasks:
+    # Load IPs from terraform.json
+    - name: Load Terraform output
+      set_fact:
+        terraform_output: "{{ lookup('file', 'terraform_output.json') | from_json }}"
+
+    - name: Extract IP addresses
+      set_fact:
+        frontend_public_ip: "{{ terraform_output.frontend_public_ip.value }}"
+        backend_public_ip: "{{ terraform_output.backend_public_ip.value }}"
+
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install required system packages
+      apt:
+        name:
+          - curl
+          - git
+          - build-essential
+          - nginx  # Add Nginx here
+          - ufw    # Firewall for security
+        state: present
+
+    - name: Add NodeSource repository for Node.js 20.x
+      shell: curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+      args:
+        creates: "/etc/apt/sources.list.d/nodesource.list"
+
+    - name: Install Node.js 20.x
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Install Angular CLI {{ angular_cli_version }} globally
+      npm:
+        name: "@angular/cli@{{ angular_cli_version }}"
+        global: yes
+
+    # Nginx Configuration Tasks
+    - name: Create Nginx configuration for Angular app
+      template:
+        src: angular-app.conf.j2
+        dest: /etc/nginx/sites-available/angular-app
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart nginx
+
+    - name: Enable Nginx site configuration
+      file:
+        src: /etc/nginx/sites-available/angular-app
+        dest: /etc/nginx/sites-enabled/angular-app
+        state: link
+      notify: restart nginx
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: restart nginx
+
+    - name: Create web directory for Angular app
+      file:
+        path: /var/www/angular-app
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Configure firewall (UFW)
+      ufw:
+        rule: allow
+        name: "{{ item }}"
+      loop:
+        - 'Nginx Full'
+        - 'OpenSSH'
+
+    - name: Start and enable Nginx service
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    # Version checks
+    - name: Get Node.js version
+      command: node -v
+      register: node_version
+      changed_when: false
+
+    - name: Get npm version
+      command: npm -v
+      register: npm_version
+      changed_when: false
+
+    - name: Get Angular CLI version
+      command: ng version --json
+      register: ng_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Get Nginx version
+      command: nginx -v
+      register: nginx_version
+      changed_when: false
+
+    - name: Display installation summary
+      debug:
+        msg: |
+          ===================================
+          Installation Successful!
+          ===================================
+          Node.js version: {{ node_version.stdout }}
+          npm version: {{ npm_version.stdout }}
+          Angular CLI version: {{ angular_cli_version }}
+          Nginx version: {{ nginx_version.stderr }}
+          ===================================
+
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
