@@ -106,6 +106,12 @@
             <artifactId>s3</artifactId>
         </dependency>
 
+        <!-- REDIS CATCH -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
 
         <!-- Spring Security -->
         <dependency>

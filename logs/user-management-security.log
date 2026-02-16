@@ -1,0 +1,4 @@
+2026-02-08 12:51:58.980 ERROR [] [] [] Cannot set user authentication: Malformed protected header JSON: Unable to deserialize: Unrecognized token 'Ș': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+ at [Source: (InputStreamReader); line: 1, column: 2]
+2026-02-08 21:16:11.164 ERROR [] [] [] Cannot set user authentication: Malformed protected header JSON: Unable to deserialize: Unrecognized token 'Ș': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+ at [Source: (InputStreamReader); line: 1, column: 2]

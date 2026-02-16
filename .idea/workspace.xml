@@ -5,30 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8137f2ac-ea06-4e3e-9920-793d5e90891f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/1a)BUILDSERVER_TERRAFORM/ec2.tf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/1a)BUILDSERVER_TERRAFORM/main.tf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/1a)BUILDSERVER_TERRAFORM/output.tf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/1a)BUILDSERVER_TERRAFORM/sq.tf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/1a)BUILDSERVER_TERRAFORM/variables.tf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/angular-app.conf.j2" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/frontend-playbook.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/generate_inventory.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/inventory.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/4)DOCUMENT/day1.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/4)DOCUMENT/day2.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/4)DOCUMENT/day3.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/4)DOCUMENT/day4.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/1_REDIS-CATCH" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jenkinsfile.v1" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/config/RedisConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/1)TERRAFORM/ec2.tf" beforeDir="false" afterPath="$PROJECT_DIR$/1)TERRAFORM/ec2.tf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/1)TERRAFORM/output.tf" beforeDir="false" afterPath="$PROJECT_DIR$/1)TERRAFORM/output.tf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/1)TERRAFORM/sq.tf" beforeDir="false" afterPath="$PROJECT_DIR$/1)TERRAFORM/sq.tf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/1)TERRAFORM/terraform_output.json" beforeDir="false" afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/terraform_output.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/backend-playbook.yml" beforeDir="false" afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/backend-playbook.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/frontend-playbook.yml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" beforeDir="false" afterPath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/jenkins-playbook.yml" beforeDir="false" afterPath="$PROJECT_DIR$/2)ANSIBLE/jenkins-playbook.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/memo.txt" beforeDir="false" afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/memo.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/mysql-playbook.yml" beforeDir="false" afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/mysql-playbook.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/inventory.ini" beforeDir="false" afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/inventory.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/user-management-error.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/user-management-error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/user-management-security.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/user-management-security.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/user-management.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/user-management.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/UserManagementApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/UserManagementApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/repository/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,7 +95,7 @@
       <recent name="$PROJECT_DIR$/3)JENKINS" />
     </key>
   </component>
-  <component name="RunManager" selected="Shell Script.generate_inventory.sh">
+  <component name="RunManager" selected="Application.UserManagementApplication">
     <configuration name="UserManagementApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.syn.usermanagement.UserManagementApplication" />
       <module name="user-management" />
@@ -145,8 +139,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Shell Script.generate_inventory.sh" />
         <item itemvalue="Application.UserManagementApplication" />
+        <item itemvalue="Shell Script.generate_inventory.sh" />
       </list>
     </recent_temporary>
   </component>

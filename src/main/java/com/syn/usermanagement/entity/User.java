@@ -5,13 +5,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 
 @Entity
 @Table(name = "USERS")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User implements Serializable {  // ✅ Implement Serializable
+
+    private static final long serialVersionUID = 1L;  // ✅ Add serialVersionUID {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

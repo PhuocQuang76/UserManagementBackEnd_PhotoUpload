@@ -1,0 +1,96 @@
+ * Installation
+       https://redis.io/download
+       docker pull redis:7.4.3 , enter
+       docker run -d -p 6379:6379 redis
+
+   * POM.xml
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-starter-data-redis</artifactId>
+       </dependency>
+
+       //this to make sure docker-compose run automatically when starting
+      <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-docker-compose</artifactId>
+          <scope>runtime</scope>
+          <optional>true</optional>
+      </dependency>
+
+
+    * In main class
+             add @EnableCaching
+             to tell compiler that we want to use cache in our application
+
+
+   * Application.properties
+        Add connection string for redis
+               spring.data.redis.host=localhost
+               spring.data.redis.port=6379
+               spring.data.redis.password=
+               spring.data.redis.username=
+               spring.cache.type=redis
+
+        # Redis SSL (if needed)
+        spring.redis.ssl=false
+
+
+
+    * create class RedisConfig under config package
+          @Configuration
+          public class RedisCacheConfig {
+
+              @Bean
+              public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+                  RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
+                          .entryTtl(Duration.ofMinutes(10)) //set time to live, will be expire in 10 minutes
+                          .disableCachingNullValues()
+                          .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                                  new Jackson2JsonRedisSerializer<>(User.class)));
+
+                  return RedisCacheManager.builder(redisConnectionFactory)
+                          .cacheDefaults(cacheConfiguration)
+                          .build();
+              }
+          }
+
+    * UserService
+        @CachePut(value = "USER_CACHE", key = "#result.id")
+            @Transactional
+            public User createUser(User user) {
+
+    * ProductController
+           //WHen create new product or update existing product, it will be saved to redis cache
+           //When we delete a product, it will be deleted from redis cache
+           //When we get a product, we just do a lookup from redis cache and get the response
+           + Create/update
+            @CachePut(value = "PRODUCTS_CACHE", key = "#result.id()")
+                //the return of this method , we will put inside the cache
+                public ProductResponse createProduct(ProductRequest productrequest) {
+
+                }
+
+           + Get product
+           @Cacheable(value = "PRODUCTS_CACHE", key = "#id")
+               public ProductResponse getProductById(String id) {
+
+           }
+
+           + Delete product
+           @CacheEvict(value = "PRODUCTS_CACHE", key = "#id")
+               public void deleteProduct(String id) {
+
+               }
+
+redis-cli
+FLUSHALL
+EXIT
+
+redis-cli
+KEYS *
+DEL "user:4"
+DEL "user:1"
+DEL "user:2"
+EXIT
+
+
