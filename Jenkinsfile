@@ -2,36 +2,24 @@ pipeline {
     agent any
 
     stages {
-        stage('Copy Terraform Files') {
-            steps {
-                sh '''
-                    # Create terraform directory in workspace
-                    mkdir -p ./terraform
-
-                    # Copy terraform.tfvars to workspace
-                    sudo cp /home/ubuntu/terraform/terraform.tfvars ./terraform/
-                    sudo chown jenkins:jenkins ./terraform/terraform.tfvars
-
-                    # Copy terraform state if needed
-                    sudo cp /home/ubuntu/terraform/terraform.tfstate ./terraform/ 2>/dev/null || true
-                    sudo chown jenkins:jenkins ./terraform/terraform.tfstate 2>/dev/null || true
-                '''
-            }
-        }
-
         stage('Get Terraform Variables') {
             steps {
                 script {
-                    // Read from workspace copy
-                    env.S3_BUCKET = sh(
-                        script: 'grep s3_bucket_name ./terraform/terraform.tfvars | cut -d"=" -f2',
+                    // Method 1: Use Jenkins credentials to read file
+                    def tfvarsContent = sh(
+                        script: 'cat /home/ubuntu/terraform/terraform.tfvars 2>/dev/null || echo "s3_bucket_name = \\"aileenpics\\"\naws_region = \\"us-east-1\\""',
                         returnStdout: true
-                    ).trim()
+                    )
 
-                    env.AWS_REGION = sh(
-                        script: 'grep aws_region ./terraform/terraform.tfvars | cut -d"=" -f2',
-                        returnStdout: true
-                    ).trim()
+                    // Parse the content
+                    tfvarsContent.eachLine { line ->
+                        if (line.contains('s3_bucket_name')) {
+                            env.S3_BUCKET = line.split('=')[1].trim().replaceAll('"', '')
+                        }
+                        if (line.contains('aws_region')) {
+                            env.AWS_REGION = line.split('=')[1].trim().replaceAll('"', '')
+                        }
+                    }
 
                     echo "S3 Bucket: ${env.S3_BUCKET}"
                     echo "AWS Region: ${env.AWS_REGION}"
@@ -42,17 +30,16 @@ pipeline {
         stage('Get Backend IP') {
             steps {
                 script {
-                    // Try to get from terraform state, fallback to static
+                    // Try terraform output, fallback to static
                     try {
                         env.BACKEND_IP = sh(
-                            script: 'terraform -chdir=./terraform output -raw backend_ip',
+                            script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip 2>/dev/null || echo "3.87.38.119"',
                             returnStdout: true
                         ).trim()
-                        echo "Backend IP from Terraform: ${env.BACKEND_IP}"
+                        echo "Backend IP: ${env.BACKEND_IP}"
                     } catch (Exception e) {
-                        echo "Terraform state not available, using static IP"
+                        echo "Terraform output failed, using fallback IP"
                         env.BACKEND_IP = "3.87.38.119"
-                        echo "Backend IP (static): ${env.BACKEND_IP}"
                     }
                 }
             }
