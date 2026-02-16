@@ -5,24 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8137f2ac-ea06-4e3e-9920-793d5e90891f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/1_REDIS-CATCH" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Jenkinsfile.v1" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/config/RedisConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" beforeDir="false" afterPath="$PROJECT_DIR$/2)ANSIBLE/inventory.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/inventory.ini" beforeDir="false" afterPath="$PROJECT_DIR$/2a)BUILDSERVER_ANSIBLE/inventory.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/user-management-error.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/user-management-error.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/user-management-security.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/user-management-security.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/user-management.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/user-management.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/UserManagementApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/UserManagementApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/controller/UserController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/entity/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/repository/UserRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/syn/usermanagement/service/UserService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

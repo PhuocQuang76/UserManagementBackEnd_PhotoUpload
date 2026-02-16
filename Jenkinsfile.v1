@@ -1,18 +1,20 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven3'
+        jdk 'JDK21'
+    }
+
     environment {
-        EC2_IP = '44.201.239.239'
-        APP_JAR = 'user-management-0.0.1-SNAPSHOT.jar'
-        REPO_URL = 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
-        SSH_KEY = '/var/lib/jenkins/userkey.pem'
-        SSH_USER = 'ubuntu'
-        // Add SSH options to avoid host key verification
-        SSH_OPTS = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        AWS_ACCESS_KEY = credentials('aws-access-key')
+        AWS_SECRET_KEY = credentials('aws-secret-key')
+        AWS_S3_BUCKET = 'user-management-s3-bucket-syn'
+        AWS_REGION = 'us-east-1'
     }
 
     stages {
-        stage('Checkout') {
+         stage('Checkout') {
             steps {
                 checkout scmGit(
                     branches: [[name: '*/main']],
@@ -25,50 +27,54 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build JAR') {
             steps {
                 sh 'mvn clean package -DskipTests'
-                sh 'ls -la target/'
             }
         }
 
-        stage('Copy Jar to EC2 instance') {
+        stage('Get Backend IP') {
             steps {
                 script {
-                    sh """
-                        echo "Copying to EC2..."
-                        scp ${SSH_OPTS} -i ${SSH_KEY} "target/${APP_JAR}" ${SSH_USER}@${EC2_IP}:/home/ubuntu/
-                        echo "Verifying file on remote server:"
-                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ls -la /home/ubuntu/${APP_JAR}"
-                    """
+                    env.BACKEND_IP = sh(
+                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
+                        returnStdout: true
+                    ).trim()
+                    echo "Backend IP: ${env.BACKEND_IP}"
                 }
             }
         }
 
-        stage('Start Application') {
+        stage('Copy JAR to Server') {
             steps {
-                script {
-                    sh """
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /dev/null 2>&1 &"
-                    """
-                }
+                sh """
+                    scp -i /var/lib/jenkins/.ssh/user.pem -o StrictHostKeyChecking=no \
+                        target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
+                """
+            }
+        }
+
+        stage('Deploy with Ansible') {
+            steps {
+                sh """
+                    ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
+                        /home/ubuntu/ansible/playbooks/deploy_backend.yml \
+                        --private-key=/var/lib/jenkins/.ssh/user.pem \
+                        -e "aws_access_key=${AWS_ACCESS_KEY}" \
+                        -e "aws_secret_key=${AWS_SECRET_KEY}" \
+                        -e "aws_s3_bucket=${AWS_S3_BUCKET}" \
+                        -e "aws_s3_region=${AWS_REGION}"
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment completed successfully!'
-            echo "Application is running on: http://${EC2_IP}:8091"
+            echo "✅ Deployment successful!"
         }
         failure {
-            echo 'Deployment failed. Check the logs for details.'
-            sh """
-                echo "=== Application Logs ==="
-                ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 50 /home/ubuntu/app.log" || echo "Could not retrieve logs"
-                echo "=== Java Process Status ==="
-                ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ps aux | grep java" || true
-            """
+            echo "❌ Deployment failed!"
         }
     }
 }
