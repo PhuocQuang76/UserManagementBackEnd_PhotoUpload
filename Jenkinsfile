@@ -1,29 +1,25 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven3'
-        jdk 'JDK21'
-    }
-
-    environment {
-        AWS_ACCESS_KEY = credentials('aws-access-key')
-        AWS_SECRET_KEY = credentials('aws-secret-key')
-        AWS_S3_BUCKET = 'user-management-s3-bucket-syn'
-        AWS_REGION = 'eu-north-1'
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Get Terraform Variables') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/neerajbalodi/user-management-backend.git'
-            }
-        }
+                script {
+                    // Get bucket name from terraform.tfvars
+                    env.S3_BUCKET = sh(
+                        script: 'grep s3_bucket_name /home/ubuntu/terraform/terraform.tfvars | cut -d"=" -f2',
+                        returnStdout: true
+                    ).trim()
 
-        stage('Build JAR') {
-            steps {
-                sh 'mvn clean package -DskipTests'
+                    // Get region from terraform.tfvars
+                    env.AWS_REGION = sh(
+                        script: 'grep aws_region /home/ubuntu/terraform/terraform.tfvars | cut -d"=" -f2',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "S3 Bucket: ${env.S3_BUCKET}"
+                    echo "AWS Region: ${env.AWS_REGION}"
+                }
             }
         }
 
@@ -39,26 +35,31 @@ pipeline {
             }
         }
 
-        stage('Copy JAR to Server') {
+        stage('Build JAR') {
             steps {
-                sh """
-                    scp -i /var/lib/jenkins/.ssh/user.pem -o StrictHostKeyChecking=no \
-                        target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
-                """
+                sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Deploy with Ansible') {
             steps {
-                sh """
-                    ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-                        /home/ubuntu/ansible/playbooks/deploy_backend.yml \
-                        --private-key=/var/lib/jenkins/.ssh/user.pem \
-                        -e "aws_access_key=${AWS_ACCESS_KEY}" \
-                        -e "aws_secret_key=${AWS_SECRET_KEY}" \
-                        -e "aws_s3_bucket=${AWS_S3_BUCKET}" \
-                        -e "aws_s3_region=${AWS_REGION}"
-                """
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-credentials',  // ✅ Correct ID
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',  // ✅ Variable name
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'  // ✅ Variable name
+                    )
+                ]) {
+                    sh """
+                        ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
+                            /home/ubuntu/ansible/playbooks/deploy_backend.yml \
+                            --private-key=/var/lib/jenkins/.ssh/user.pem \
+                            -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
+                            -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
+                            -e "aws_s3_bucket=${env.S3_BUCKET}" \
+                            -e "aws_s3_region=${env.AWS_REGION}"
+                    """
+                }
             }
         }
     }
