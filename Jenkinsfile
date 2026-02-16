@@ -5,14 +5,15 @@ pipeline {
         stage('Get Terraform Variables') {
             steps {
                 script {
-                    // Method 1: Use Jenkins credentials to read file
+                    // Read terraform.tfvars content as string
                     def tfvarsContent = sh(
                         script: 'cat /home/ubuntu/terraform/terraform.tfvars 2>/dev/null || echo "s3_bucket_name = \\"aileenpics\\"\naws_region = \\"us-east-1\\""',
                         returnStdout: true
                     )
 
-                    // Parse the content
-                    tfvarsContent.eachLine { line ->
+                    // Parse string line by line
+                    def lines = tfvarsContent.split('\n')
+                    lines.each { line ->
                         if (line.contains('s3_bucket_name')) {
                             env.S3_BUCKET = line.split('=')[1].trim().replaceAll('"', '')
                         }
@@ -30,7 +31,6 @@ pipeline {
         stage('Get Backend IP') {
             steps {
                 script {
-                    // Try terraform output, fallback to static
                     try {
                         env.BACKEND_IP = sh(
                             script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip 2>/dev/null || echo "3.87.38.119"',
@@ -38,8 +38,8 @@ pipeline {
                         ).trim()
                         echo "Backend IP: ${env.BACKEND_IP}"
                     } catch (Exception e) {
-                        echo "Terraform output failed, using fallback IP"
                         env.BACKEND_IP = "3.87.38.119"
+                        echo "Backend IP (fallback): ${env.BACKEND_IP}"
                     }
                 }
             }
