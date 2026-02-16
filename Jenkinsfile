@@ -5,13 +5,11 @@ pipeline {
         stage('Get Terraform Variables') {
             steps {
                 script {
-                    // Get bucket name from terraform.tfvars
                     env.S3_BUCKET = sh(
                         script: 'grep s3_bucket_name /home/ubuntu/terraform/terraform.tfvars | cut -d"=" -f2',
                         returnStdout: true
                     ).trim()
 
-                    // Get region from terraform.tfvars
                     env.AWS_REGION = sh(
                         script: 'grep aws_region /home/ubuntu/terraform/terraform.tfvars | cut -d"=" -f2',
                         returnStdout: true
@@ -41,19 +39,30 @@ pipeline {
             }
         }
 
+        stage('Copy JAR to Server') {
+            steps {
+                sh """
+                    # CHANGE THIS: Use correct key path
+                    scp -i /home/ubuntu/.ssh/userkey.pem -o StrictHostKeyChecking=no \
+                        target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
+                """
+            }
+        }
+
         stage('Deploy with Ansible') {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'aws-credentials',  // ✅ Correct ID
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',  // ✅ Variable name
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'  // ✅ Variable name
+                        credentialsId: 'aws-credentials',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
                 ]) {
                     sh """
+                        # CHANGE THIS: Use correct key path
                         ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
                             /home/ubuntu/ansible/playbooks/deploy_backend.yml \
-                            --private-key=/var/lib/jenkins/.ssh/user.pem \
+                            --private-key=/home/ubuntu/.ssh/userkey.pem \
                             -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
                             -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
                             -e "aws_s3_bucket=${env.S3_BUCKET}" \
