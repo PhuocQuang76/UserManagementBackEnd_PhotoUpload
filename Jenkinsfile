@@ -2,6 +2,22 @@ pipeline {
     agent any
 
     stages {
+        stage('Setup SSH Access') {
+            steps {
+                sh '''
+                    # Add jenkins to ubuntu group
+                    sudo usermod -a -G ubuntu jenkins
+
+                    # Make SSH key readable by group
+                    sudo chmod 640 /home/ubuntu/.ssh/userkey.pem
+
+                    # Verify setup
+                    ls -la /home/ubuntu/.ssh/userkey.pem
+                    groups jenkins
+                '''
+            }
+        }
+
         stage('Get Terraform Variables') {
             steps {
                 script {
