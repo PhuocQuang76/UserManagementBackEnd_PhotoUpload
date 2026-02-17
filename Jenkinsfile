@@ -40,7 +40,7 @@ pipeline {
         stage('Copy JAR to Server') {
             steps {
                 sh """
-                    scp -i /var/lib/jenkins/.ssh/user.pem -o StrictHostKeyChecking=no \
+                    scp -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no \
                         target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
                 """
             }
