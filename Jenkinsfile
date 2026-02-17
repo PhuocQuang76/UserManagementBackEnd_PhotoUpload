@@ -31,16 +31,12 @@ pipeline {
         stage('Get Backend IP') {
             steps {
                 script {
-                    try {
-                        env.BACKEND_IP = sh(
-                            script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip 2>/dev/null || echo "3.87.38.119"',
-                            returnStdout: true
-                        ).trim()
-                        echo "Backend IP: ${env.BACKEND_IP}"
-                    } catch (Exception e) {
-                        env.BACKEND_IP = "3.87.38.119"
-                        echo "Backend IP (fallback): ${env.BACKEND_IP}"
-                    }
+                    // Read from Ansible inventory (correct source)
+                    env.BACKEND_IP = sh(
+                        script: 'grep -A 1 "\\[backend\\]" /home/ubuntu/ansible/inventory/hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+"',
+                        returnStdout: true
+                    ).trim()
+                    echo "Backend IP: ${env.BACKEND_IP}"
                 }
             }
         }
