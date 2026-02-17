@@ -78,11 +78,15 @@ pipeline {
                    )
                ]) {
                    sh '''
-                       # Just copy and run Ansible (no sed needed)
+                       # Copy playbook and fix issues
                        cp /home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml 2>/dev/null || \
                        scp -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@ip-10-0-1-59:/home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml
 
-                       # Run Ansible directly
+                       # Fix port and timeout with PROPER QUOTES
+                       sed -i "s/port: 8091/port: 8080/" ./deploy_backend.yml
+                       sed -i "s/timeout: 60/timeout: 300/" ./deploy_backend.yml
+
+                       # Run Ansible
                        ansible-playbook -i ./hosts ./deploy_backend.yml \
                            --private-key=/var/lib/jenkins/userkey.pem \
                            -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
