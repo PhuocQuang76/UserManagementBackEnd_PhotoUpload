@@ -78,11 +78,7 @@ pipeline {
                    )
                ]) {
                    sh '''
-                       # Copy playbook (no sed needed - playbook is already correct)
-                       cp /home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml 2>/dev/null || \
-                       scp -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@ip-10-0-1-59:/home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml
-
-                       # Run Ansible directly (no sed fixes needed)
+                       # Use playbook from Git workspace (not remote server)
                        ansible-playbook -i ./hosts ./deploy_backend.yml \
                            --private-key=/var/lib/jenkins/userkey.pem \
                            -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
