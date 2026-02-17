@@ -82,23 +82,16 @@ EOF
 
        stage('Deploy with Ansible') {
            steps {
-               withCredentials([
-                   usernamePassword(
-                       credentialsId: 'aws-credentials',
-                       usernameVariable: 'AWS_ACCESS_KEY_ID',
-                       passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                   )
-               ]) {
-                   sh '''
-                       # Use playbook from Git workspace (not remote server)
-                       ansible-playbook -i ./hosts ./deploy_backend.yml \
-                           --private-key=/var/lib/jenkins/userkey.pem \
-                           -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
-                           -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
-                           -e "aws_s3_bucket=${env.S3_BUCKET}" \
-                           -e "aws_s3_region=${env.AWS_REGION}"
-                   '''
-               }
+               sh '''
+                   # Simple manual deployment - no shell variable issues
+                   ssh -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@54.87.38.119 "
+                       sudo pkill -f application.jar || true
+                       cd /tmp
+                       nohup sudo java -jar application.jar --server.address=0.0.0.0 --server.port=8080 > app.log 2>&1 &
+                       sleep 10
+                       echo 'Application started on http://54.87.38.119:8080'
+                   "
+               '''
            }
        }
     }
@@ -106,7 +99,7 @@ EOF
     post {
         success {
             echo "✅ Deployment successful!"
-            echo "Application is running on: http://${env.BACKEND_IP}:8080"
+            echo "Application is running on: http://54.87.38.119:8080"
         }
         failure {
             echo "❌ Deployment failed!"
