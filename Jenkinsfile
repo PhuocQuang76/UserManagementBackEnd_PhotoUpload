@@ -72,7 +72,7 @@ pipeline {
                 ]) {
                     sh """
                         ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-                            /home/ubuntu/ansible/playbooks/deploy_backend.yml \
+                            /home/ubuntu/ansible/playbook/deploy_backend.yml \
                             --private-key=/home/ubuntu/.ssh/userkey.pem \
                             -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
                             -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
