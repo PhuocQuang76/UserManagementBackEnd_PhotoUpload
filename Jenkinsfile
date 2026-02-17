@@ -24,20 +24,20 @@ pipeline {
         stage('Get Server IPs') {
             steps {
                 script {
-                    // Get Backend IP
+                    // Get Backend IP with sudo
                     env.BACKEND_IP = sh(
-                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
+                        script: 'sudo -u jenkins terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
                         returnStdout: true
                     ).trim()
 
-                    // Get Database IP
+                    // Get Database IP with sudo
                     env.DATABASE_IP = sh(
-                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip',
+                        script: 'sudo -u jenkins terraform -chdir=/home/ubuntu/terraform output -raw database_ip',
                         returnStdout: true
                     ).trim()
 
                     echo "Backend IP: ${env.BACKEND_IP}"
-                    echo "Database IP: ${env.DATABASE_IP}"
+                    echo "Database IP: ${env.DATABASE_IP}""
                 }
             }
         }
