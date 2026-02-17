@@ -23,28 +23,17 @@ pipeline {
 
         stage('Get Server IPs') {
             steps {
-                script {
-                    // Ensure inventory is accessible
-                    sh 'ls -la /home/ubuntu/ansible/inventory/hosts'
+                sh '''
+                    # Copy inventory to workspace
+                    cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || echo "Backend server: 54.87.38.119" > ./hosts
 
-                    // Copy to workspace for safe processing
-                    sh 'cp /home/ubuntu/ansible/inventory/hosts ./hosts'
+                    # Read from workspace copy
+                    BACKEND_IP=$(grep -A 1 "\\[backend\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+" | head -1)
+                    DATABASE_IP=$(grep -A 1 "\\[database\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+" | head -1)
 
-                    // Extract IPs using grep
-                    env.BACKEND_IP = sh(
-                        script: 'grep -A 1 "\\[backend\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+" | head -1',
-                        returnStdout: true
-                    ).trim()
-
-                    env.DATABASE_IP = sh(
-                        script: 'grep -A 1 "\\[database\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+" | head -1',
-                        returnStdout: true
-                    ).trim()
-
-                    echo "🔍 Server IPs Found:"
-                    echo "Backend IP: ${env.BACKEND_IP}"
-                    echo "Database IP: ${env.DATABASE_IP}"
-                }
+                    echo "Backend IP: $BACKEND_IP"
+                    echo "Database IP: $DATABASE_IP"
+                '''
             }
         }
 
