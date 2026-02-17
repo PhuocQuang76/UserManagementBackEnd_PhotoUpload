@@ -31,17 +31,24 @@ pipeline {
        stage('Get Backend IP') {
            steps {
                script {
-                   // Copy inventory to workspace first
+                   // Copy inventory to workspace first with ALL groups
                    sh '''
-                       cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || echo "[backend]\\n54.87.38.119 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/userkey.pem" > ./hosts
+                       cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || echo "[backend]\\n54.87.38.119 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[database]\\n34.229.93.195 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[frontend]\\n3.82.48.70 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[all:vars]\\nansible_python_interpreter=/usr/bin/python3" > ./hosts
                    '''
 
-                   // Read from workspace copy
+                   // Read backend IP from workspace copy
                    env.BACKEND_IP = sh(
                        script: 'grep -A 1 "\\[backend\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+"',
                        returnStdout: true
                    ).trim()
                    echo "Backend IP: ${env.BACKEND_IP}"
+
+                   // Also get database IP for verification
+                   env.DATABASE_IP = sh(
+                       script: 'grep -A 1 "\\[database\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+"',
+                       returnStdout: true
+                   ).trim()
+                   echo "Database IP: ${env.DATABASE_IP}"
                }
            }
        }
