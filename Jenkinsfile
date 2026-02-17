@@ -33,7 +33,19 @@ pipeline {
                script {
                    // Copy inventory to workspace first with ALL groups
                    sh '''
-                       cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || echo "[backend]\\n54.87.38.119 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[database]\\n34.229.93.195 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[frontend]\\n3.82.48.70 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[all:vars]\\nansible_python_interpreter=/usr/bin/python3" > ./hosts
+                       cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || cat > ./hosts << EOF
+[backend]
+54.87.38.119 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem
+
+[database]
+34.229.93.195 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem
+
+[frontend]
+3.82.48.70 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+EOF
                    '''
 
                    // Read backend IP from workspace copy
