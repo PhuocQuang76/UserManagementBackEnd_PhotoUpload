@@ -1,56 +1,102 @@
 pipeline {
     agent any
 
-    environment {
-        EC2_IP = '44.201.239.239'
-        APP_JAR = 'user-management-0.0.1-SNAPSHOT.jar'
-        REPO_URL = 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
-        SSH_KEY = '/var/lib/jenkins/userkey.pem'
-        SSH_USER = 'ubuntu'
-        // Add SSH options to avoid host key verification
-        SSH_OPTS = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Get Terraform Variables') {
             steps {
-                checkout scmGit(
-                    branches: [[name: '*/main']],
-                    extensions: [],
-                    userRemoteConfigs: [[
-                        credentialsId: 'gitCredential',
-                        url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
-                    ]]
-                )
+                script {
+                    // Read terraform.tfvars content
+                    def tfvarsContent = sh(
+                        script: 'cat /home/ubuntu/terraform/terraform.tfvars 2>/dev/null || echo "s3_bucket_name = \\"aileenpics\\"\naws_region = \\"us-east-1\\""',
+                        returnStdout: true
+                    )
+
+                    // Parse variables
+                    def lines = tfvarsContent.split('\n')
+                    lines.each { line ->
+                        if (line.contains('s3_bucket_name')) {
+                            env.S3_BUCKET = line.split('=')[1].trim().replaceAll('"', '')
+                        }
+                        if (line.contains('aws_region')) {
+                            env.AWS_REGION = line.split('=')[1].trim().replaceAll('"', '')
+                        }
+                    }
+
+                    echo "S3 Bucket: ${env.S3_BUCKET}"
+                    echo "AWS Region: ${env.AWS_REGION}"
+                }
+            }
+        }
+
+        stage('Get Backend and Database IPs') {
+            steps {
+                script {
+                    // Get IPs from Ansible inventory (dynamic)
+                    sh '''
+                        cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || echo "[backend]\\n54.87.38.119 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[database]\\n34.229.93.195 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[frontend]\\n3.82.48.70 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem\\n\\n[all:vars]\\nansible_python_interpreter=/usr/bin/python3" > ./hosts
+                    '''
+
+                    // Get Backend IP
+                    env.BACKEND_IP = sh(
+                        script: 'grep -A 1 "\\[backend\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+"',
+                        returnStdout: true
+                    ).trim()
+                    echo "Backend IP: ${env.BACKEND_IP}"
+
+                    // Get Database IP
+                    env.DATABASE_IP = sh(
+                        script: 'grep -A 1 "\\[database\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+"',
+                        returnStdout: true
+                    ).trim()
+                    echo "Database IP: ${env.DATABASE_IP}"
+                }
             }
         }
 
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
-                sh 'ls -la target/'
             }
         }
 
-        stage('Copy Jar to EC2 instance') {
+        stage('Copy JAR to Server') {
             steps {
-                script {
-                    sh """
-                        echo "Copying to EC2..."
-                        scp ${SSH_OPTS} -i ${SSH_KEY} "target/${APP_JAR}" ${SSH_USER}@${EC2_IP}:/home/ubuntu/
-                        echo "Verifying file on remote server:"
-                        ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ls -la /home/ubuntu/${APP_JAR}"
-                    """
-                }
+                sh """
+                    scp -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no \
+                        target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
+                """
             }
         }
 
-        stage('Start Application') {
+        stage('Deploy with Ansible') {
             steps {
-                script {
-                    sh """
-                        ssh -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "nohup java -jar /home/ubuntu/${APP_JAR} > /dev/null 2>&1 &"
-                    """
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-credentials',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
+                    sh '''
+                        # Copy playbook and fix issues
+                        cp /home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml 2>/dev/null || \
+                        scp -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@ip-10-0-1-59:/home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml
+
+                        # Fix port and timeout
+                        sed -i "s/port: 8091/port: 8080/" ./deploy_backend.yml
+                        sed -i "s/timeout: 60/timeout: 300/" ./deploy_backend.yml
+
+                        # Add public binding
+                        sed -i '/server.port=8080/a \          server.address=0.0.0.0' ./deploy_backend.yml
+
+                        # Run Ansible with all variables
+                        ansible-playbook -i ./hosts ./deploy_backend.yml \
+                            --private-key=/var/lib/jenkins/userkey.pem \
+                            -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
+                            -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
+                            -e "aws_s3_bucket=${env.S3_BUCKET}" \
+                            -e "aws_s3_region=${env.AWS_REGION}"
+                    '''
                 }
             }
         }
@@ -58,17 +104,12 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment completed successfully!'
-            echo "Application is running on: http://${EC2_IP}:8091"
+            echo "✅ Deployment successful!"
+            echo "Backend Application: http://${env.BACKEND_IP}:8080"
+            echo "Database Server: ${env.DATABASE_IP}:3306"
         }
         failure {
-            echo 'Deployment failed. Check the logs for details.'
-            sh """
-                echo "=== Application Logs ==="
-                ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "tail -n 50 /home/ubuntu/app.log" || echo "Could not retrieve logs"
-                echo "=== Java Process Status ==="
-                ssh ${SSH_OPTS} -i ${SSH_KEY} ${SSH_USER}@${EC2_IP} "ps aux | grep java" || true
-            """
+            echo "❌ Deployment failed!"
         }
     }
 }
