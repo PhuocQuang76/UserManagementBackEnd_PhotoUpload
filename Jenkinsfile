@@ -37,7 +37,7 @@ pipeline {
                     ).trim()
 
                     echo "Backend IP: ${env.BACKEND_IP}"
-                    echo "Database IP: ${env.DATABASE_IP}""
+                    echo "Database IP: ${env.DATABASE_IP}"
                 }
             }
         }
