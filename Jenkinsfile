@@ -90,13 +90,63 @@ EOF
                    )
                ]) {
                    sh '''
-                       # Use playbook from Git workspace (not remote server)
-                       ansible-playbook -i ./hosts ./deploy_backend.yml \
-                           --private-key=/var/lib/jenkins/userkey.pem \
-                           -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
-                           -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
-                           -e "aws_s3_bucket=${env.S3_BUCKET}" \
-                           -e "aws_s3_region=${env.AWS_REGION}"
+                       # Manual deployment - skip Ansible for now
+                       ssh -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@${env.BACKEND_IP} '
+                           # Create app directory
+                           sudo mkdir -p /opt/springboot/logs
+                           sudo mkdir -p /opt/springboot
+
+                           # Copy JAR to app directory
+                           sudo cp /tmp/application.jar /opt/springboot/application.jar
+                           sudo chmod +x /opt/springboot/application.jar
+
+                           # Create application.properties
+                           sudo cat > /opt/springboot/application.properties << EOF
+       # Database Configuration
+       spring.datasource.url=jdbc:mysql://${env.DATABASE_IP}:3306/photoupload
+       spring.datasource.username=admin
+       spring.datasource.password=admin
+       spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+       spring.jpa.hibernate.ddl-auto=update
+       spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+       # Server Configuration
+       server.port=8080
+       server.address=0.0.0.0
+
+       # AWS Configuration
+       aws.access-key=${AWS_ACCESS_KEY_ID}
+       aws.secret-key=${AWS_SECRET_ACCESS_KEY}
+       aws.s3.bucket-name=${env.S3_BUCKET}
+       aws.s3.region=${env.AWS_REGION}
+
+       # JWT Configuration
+       jwt.secret=dGhpc0lzQVZlcnlMb25nU2VjcmV0S2V5Rm9ySldUVG9rZW5HZW5lcmF0aW9uMTIzNDU2Nzg5MA==
+       jwt.expiration=86400000
+
+       # File upload limits
+       spring.servlet.multipart.max-file-size=5MB
+       spring.servlet.multipart.max-request-size=5MB
+       EOF
+
+                           # Stop existing application
+                           sudo pkill -f "application.jar" || true
+
+                           # Start application
+                           cd /opt/springboot
+                           nohup sudo java -jar application.jar --spring.config.location=/opt/springboot/application.properties > logs/application.log 2>&1 &
+
+                           # Wait for application to start
+                           sleep 10
+
+                           # Check if application is running
+                           if netstat -tlnp | grep :8080; then
+                               echo "✅ Application started successfully on port 8080"
+                           else
+                               echo "❌ Application failed to start"
+                               exit 1
+                           fi
+                       '
                    '''
                }
            }
