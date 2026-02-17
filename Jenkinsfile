@@ -71,7 +71,7 @@ pipeline {
                    )
                ]) {
                    sh """
-                       # Fix path: playbook (singular) not playbooks (plural)
+                       # Fix path: playbook (singular) not playbook
                        ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
                            /home/ubuntu/ansible/playbook/deploy_backend.yml \
                            --private-key=/home/ubuntu/.ssh/userkey.pem \
