@@ -82,26 +82,15 @@ EOF
 
        stage('Deploy with Ansible') {
            steps {
-               withCredentials([
-                   usernamePassword(
-                       credentialsId: 'aws-credentials',
-                       usernameVariable: 'AWS_ACCESS_KEY_ID',
-                       passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                   )
-               ]) {
-                   sh '''
-                       # Manual deployment - skip Ansible for now
-                       ssh -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@${env.BACKEND_IP} '
-                           # Create app directory
-                           sudo mkdir -p /opt/springboot/logs
-                           sudo mkdir -p /opt/springboot
+               sh '''
+                   # Simple manual deployment - skip Ansible for now
+                   ssh -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@${env.BACKEND_IP} '
+                       # Stop any existing application
+                       sudo pkill -f "application.jar" || true
 
-                           # Copy JAR to app directory
-                           sudo cp /tmp/application.jar /opt/springboot/application.jar
-                           sudo chmod +x /opt/springboot/application.jar
-
-                           # Create application.properties
-                           sudo cat > /opt/springboot/application.properties << EOF
+                       # Create application.properties with database IP
+                       sudo mkdir -p /opt/springboot
+                       sudo cat > /opt/springboot/application.properties << EOF
        # Database Configuration
        spring.datasource.url=jdbc:mysql://${env.DATABASE_IP}:3306/photoupload
        spring.datasource.username=admin
@@ -114,12 +103,6 @@ EOF
        server.port=8080
        server.address=0.0.0.0
 
-       # AWS Configuration
-       aws.access-key=${AWS_ACCESS_KEY_ID}
-       aws.secret-key=${AWS_SECRET_ACCESS_KEY}
-       aws.s3.bucket-name=${env.S3_BUCKET}
-       aws.s3.region=${env.AWS_REGION}
-
        # JWT Configuration
        jwt.secret=dGhpc0lzQVZlcnlMb25nU2VjcmV0S2V5Rm9ySldUVG9rZW5HZW5lcmF0aW9uMTIzNDU2Nzg5MA==
        jwt.expiration=86400000
@@ -127,28 +110,31 @@ EOF
        # File upload limits
        spring.servlet.multipart.max-file-size=5MB
        spring.servlet.multipart.max-request-size=5MB
+
+       # AWS Configuration
+       aws.access-key=${AWS_ACCESS_KEY_ID}
+       aws.secret-key=${AWS_SECRET_ACCESS_KEY}
+       aws.s3.bucket-name=${env.S3_BUCKET}
+       aws.s3.region=${env.AWS_REGION}
        EOF
 
-                           # Stop existing application
-                           sudo pkill -f "application.jar" || true
+                       # Start application
+                       cd /opt/springboot
+                       sudo cp /tmp/application.jar ./application.jar
+                       nohup sudo java -jar application.jar --spring.config.location=/opt/springboot/application.properties > app.log 2>&1 &
 
-                           # Start application
-                           cd /opt/springboot
-                           nohup sudo java -jar application.jar --spring.config.location=/opt/springboot/application.properties > logs/application.log 2>&1 &
+                       # Wait for startup
+                       sleep 15
 
-                           # Wait for application to start
-                           sleep 10
-
-                           # Check if application is running
-                           if netstat -tlnp | grep :8080; then
-                               echo "✅ Application started successfully on port 8080"
-                           else
-                               echo "❌ Application failed to start"
-                               exit 1
-                           fi
-                       '
-                   '''
-               }
+                       # Check if running
+                       if netstat -tlnp | grep :8080; then
+                           echo "✅ Application started successfully on port 8080"
+                       else
+                           echo "❌ Application failed to start"
+                           tail -20 app.log
+                       fi
+                   '
+               '''
            }
        }
     }
