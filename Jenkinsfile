@@ -82,59 +82,23 @@ EOF
 
        stage('Deploy with Ansible') {
            steps {
-               sh '''
-                   # Simple manual deployment - skip Ansible for now
-                   ssh -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@${env.BACKEND_IP} '
-                       # Stop any existing application
-                       sudo pkill -f "application.jar" || true
-
-                       # Create application.properties with database IP
-                       sudo mkdir -p /opt/springboot
-                       sudo cat > /opt/springboot/application.properties << EOF
-       # Database Configuration
-       spring.datasource.url=jdbc:mysql://${env.DATABASE_IP}:3306/photoupload
-       spring.datasource.username=admin
-       spring.datasource.password=admin
-       spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-       spring.jpa.hibernate.ddl-auto=update
-       spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
-
-       # Server Configuration
-       server.port=8080
-       server.address=0.0.0.0
-
-       # JWT Configuration
-       jwt.secret=dGhpc0lzQVZlcnlMb25nU2VjcmV0S2V5Rm9ySldUVG9rZW5HZW5lcmF0aW9uMTIzNDU2Nzg5MA==
-       jwt.expiration=86400000
-
-       # File upload limits
-       spring.servlet.multipart.max-file-size=5MB
-       spring.servlet.multipart.max-request-size=5MB
-
-       # AWS Configuration
-       aws.access-key=${AWS_ACCESS_KEY_ID}
-       aws.secret-key=${AWS_SECRET_ACCESS_KEY}
-       aws.s3.bucket-name=${env.S3_BUCKET}
-       aws.s3.region=${env.AWS_REGION}
-       EOF
-
-                       # Start application
-                       cd /opt/springboot
-                       sudo cp /tmp/application.jar ./application.jar
-                       nohup sudo java -jar application.jar --spring.config.location=/opt/springboot/application.properties > app.log 2>&1 &
-
-                       # Wait for startup
-                       sleep 15
-
-                       # Check if running
-                       if netstat -tlnp | grep :8080; then
-                           echo "✅ Application started successfully on port 8080"
-                       else
-                           echo "❌ Application failed to start"
-                           tail -20 app.log
-                       fi
-                   '
-               '''
+               withCredentials([
+                   usernamePassword(
+                       credentialsId: 'aws-credentials',
+                       usernameVariable: 'AWS_ACCESS_KEY_ID',
+                       passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                   )
+               ]) {
+                   sh '''
+                       # Use playbook from Git workspace (not remote server)
+                       ansible-playbook -i ./hosts ./deploy_backend.yml \
+                           --private-key=/var/lib/jenkins/userkey.pem \
+                           -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
+                           -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
+                           -e "aws_s3_bucket=${env.S3_BUCKET}" \
+                           -e "aws_s3_region=${env.AWS_REGION}"
+                   '''
+               }
            }
        }
     }
