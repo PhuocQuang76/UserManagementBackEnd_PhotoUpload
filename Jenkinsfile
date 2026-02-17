@@ -61,27 +61,28 @@ pipeline {
             }
         }
 
-        stage('Deploy with Ansible') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-credentials',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
-                    sh """
-                        ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-                            /home/ubuntu/ansible/playbook/deploy_backend.yml \
-                            --private-key=/home/ubuntu/.ssh/userkey.pem \
-                            -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
-                            -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
-                            -e "aws_s3_bucket=${env.S3_BUCKET}" \
-                            -e "aws_s3_region=${env.AWS_REGION}"
-                    """
-                }
-            }
-        }
+       stage('Deploy with Ansible') {
+           steps {
+               withCredentials([
+                   usernamePassword(
+                       credentialsId: 'aws-credentials',
+                       usernameVariable: 'AWS_ACCESS_KEY_ID',
+                       passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                   )
+               ]) {
+                   sh """
+                       # Fix path: playbook (singular) not playbooks (plural)
+                       ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
+                           /home/ubuntu/ansible/playbook/deploy_backend.yml \
+                           --private-key=/home/ubuntu/.ssh/userkey.pem \
+                           -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
+                           -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
+                           -e "aws_s3_bucket=${env.S3_BUCKET}" \
+                           -e "aws_s3_region=${env.AWS_REGION}"
+                   """
+               }
+           }
+       }
     }
 
     post {
