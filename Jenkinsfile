@@ -28,23 +28,23 @@ pipeline {
             }
         }
 
-      stage('Get Backend IP') {
-          steps {
-              script {
-                  // Copy inventory to workspace first with correct SSH key path
-                  sh '''
-                      cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || echo "[backend]\\n54.87.38.119 ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/userkey.pem" > ./hosts
-                  '''
+       stage('Get Backend IP') {
+           steps {
+               script {
+                   // Copy inventory to workspace first
+                   sh '''
+                       cp /home/ubuntu/ansible/inventory/hosts ./hosts 2>/dev/null || echo "[backend]\\n54.87.38.119 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/userkey.pem" > ./hosts
+                   '''
 
-                  // Read from workspace copy
-                  env.BACKEND_IP = sh(
-                      script: 'grep -A 1 "\\[backend\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+"',
-                      returnStdout: true
-                  ).trim()
-                  echo "Backend IP: ${env.BACKEND_IP}"
-              }
-          }
-      }
+                   // Read from workspace copy
+                   env.BACKEND_IP = sh(
+                       script: 'grep -A 1 "\\[backend\\]" ./hosts | grep -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+"',
+                       returnStdout: true
+                   ).trim()
+                   echo "Backend IP: ${env.BACKEND_IP}"
+               }
+           }
+       }
 
         stage('Build JAR') {
             steps {
