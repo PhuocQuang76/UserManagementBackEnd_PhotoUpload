@@ -61,31 +61,31 @@ pipeline {
             }
         }
 
-       stage('Deploy with Ansible') {
-           steps {
-               withCredentials([
-                   usernamePassword(
-                       credentialsId: 'aws-credentials',
-                       usernameVariable: 'AWS_ACCESS_KEY_ID',
-                       passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                   )
-               ]) {
-                   sh """
-                       # Copy playbook to workspace first
-                       cp /home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml 2>/dev/null || \
-                       scp -i /var/lib/jenkins/userkey.pem ubuntu@ip-10-0-1-59:/home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml
+      stage('Deploy with Ansible') {
+          steps {
+              withCredentials([
+                  usernamePassword(
+                      credentialsId: 'aws-credentials',
+                      usernameVariable: 'AWS_ACCESS_KEY_ID',
+                      passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                  )
+              ]) {
+                  sh """
+                      # Copy playbook to workspace first (with host key verification disabled)
+                      cp /home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml 2>/dev/null || \
+                      scp -i /var/lib/jenkins/userkey.pem -o StrictHostKeyChecking=no ubuntu@ip-10-0-1-59:/home/ubuntu/ansible/playbook/deploy_backend.yml ./deploy_backend.yml
 
-                       # Use workspace copy and correct SSH key
-                       ansible-playbook -i ./hosts ./deploy_backend.yml \
-                           --private-key=/var/lib/jenkins/userkey.pem \
-                           -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
-                           -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
-                           -e "aws_s3_bucket=${env.S3_BUCKET}" \
-                           -e "aws_s3_region=${env.AWS_REGION}"
-                   """
-               }
-           }
-       }
+                      # Use workspace copy and correct SSH key
+                      ansible-playbook -i ./hosts ./deploy_backend.yml \
+                          --private-key=/var/lib/jenkins/userkey.pem \
+                          -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
+                          -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
+                          -e "aws_s3_bucket=${env.S3_BUCKET}" \
+                          -e "aws_s3_region=${env.AWS_REGION}"
+                  """
+              }
+          }
+      }
     }
 
     post {
