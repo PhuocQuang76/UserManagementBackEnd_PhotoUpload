@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'backend-node' }
+    agent any
 
 
     stages {
