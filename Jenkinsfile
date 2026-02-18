@@ -1,6 +1,18 @@
 pipeline {
-    agent any
+    agent { label 'backend-node' }
 
+    stage('Debug User & Paths') {
+        steps {
+            sh '''
+                echo "WHOAMI:"
+                whoami
+                echo "PWD:"
+                pwd
+                echo "LS /home/ubuntu:"
+                ls -ld /home/ubuntu /home/ubuntu/terraform || true
+            '''
+        }
+    }
     stages {
         stage('Checkout') {
             steps {
