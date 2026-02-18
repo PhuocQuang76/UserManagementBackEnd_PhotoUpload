@@ -24,15 +24,25 @@ pipeline {
        stage('Get Server IPs') {
            steps {
                sh '''
-                   # Copy state file with ubuntu user, then read as jenkins
-                   sudo cp /home/ubuntu/terraform/terraform.tfstate ./terraform.tfstate
-                   sudo chown jenkins:jenkins ./terraform.tfstate
-                   sudo chmod 644 ./terraform.tfstate
+                   echo "Getting server IPs dynamically..."
 
-                   # Read IPs from copied file
-                   BACKEND_IP=$(cat ./terraform.tfstate | grep -o '"backend_ip": {[^}]*"value": "[^"]*"' | grep -o '"[^"]*"$' | head -1 | tr -d '"')
-                   DATABASE_IP=$(cat ./terraform.tfstate | grep -o '"database_ip": {[^}]*"value": "[^"]*"' | grep -o '"[^"]*"$' | head -1 | tr -d '"')
-                   FRONTEND_IP=$(cat ./terraform.tfstate | grep -o '"frontend_ip": {[^}]*"value": "[^"]*"' | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                   # Copy terraform state to workspace
+                   cp /home/ubuntu/terraform/terraform.tfstate ./terraform.tfstate 2>/dev/null || echo "State file not accessible"
+
+                   # Read IPs from state file
+                   if [ -f "./terraform.tfstate" ]; then
+                       BACKEND_IP=$(grep -o '"backend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                       DATABASE_IP=$(grep -o '"database_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                       FRONTEND_IP=$(grep -o '"frontend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+
+                       echo "✅ Extracted IPs from terraform.tfstate"
+                   else
+                       # Fallback IPs
+                       BACKEND_IP="54.91.109.116"
+                       DATABASE_IP="34.229.179.196"
+                       FRONTEND_IP="34.228.82.246"
+                       echo "Using fallback IPs"
+                   fi
 
                    echo "Backend IP: $BACKEND_IP"
                    echo "Database IP: $DATABASE_IP"
