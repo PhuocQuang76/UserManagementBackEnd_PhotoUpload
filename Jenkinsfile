@@ -3,19 +3,6 @@ pipeline {
 
 
     stages {
-
-        stage('Debug User & Paths') {
-                steps {
-                    sh '''
-                        echo "WHOAMI:"
-                        whoami
-                        echo "PWD:"
-                        pwd
-                        echo "LS /home/ubuntu:"
-                        ls -ld /home/ubuntu /home/ubuntu/terraform || true
-                    '''
-                }
-            }
         stage('Checkout') {
             steps {
                 checkout scmGit(
@@ -37,21 +24,18 @@ pipeline {
 
 
 
-        stage('Get Backend & DB IPs') {
+        stage('Get All Config') {
             steps {
                 script {
-                    env.BACKEND_IP = sh(
-                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
-                        returnStdout: true
-                    ).trim()
+                    env.BACKEND_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip', returnStdout: true).trim()
+                    env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
+                    env.AWS_S3_BUCKET = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw s3_bucket_name', returnStdout: true).trim()
+                    env.AWS_REGION = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw aws_region', returnStdout: true).trim()
 
-                    env.DATABASE_IP = sh(
-                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip',
-                        returnStdout: true
-                    ).trim()
-
-                    echo "Backend IP: ${env.BACKEND_IP}"
-                    echo "Database IP: ${env.DATABASE_IP}"
+                    echo "Backend: ${env.BACKEND_IP}"
+                    echo "Database: ${env.DATABASE_IP}"
+                    echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
+                    echo "Region: ${env.AWS_REGION}"
                 }
             }
         }
@@ -68,19 +52,27 @@ pipeline {
         }
 
 
-        stage('Deploy with Ansible') {
-            steps {
-                sh """
-                    ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-                        /home/ubuntu/ansible/playbooks/deploy_backend.yml \
-                        --private-key=/var/lib/jenkins/.ssh/userkey.pem \
-                        -e "aws_access_key=${AWS_ACCESS_KEY}" \
-                        -e "aws_secret_key=${AWS_SECRET_KEY}" \
-                        -e "aws_s3_bucket=${AWS_S3_BUCKET}" \
-                        -e "aws_s3_region=${AWS_REGION}"
-                """
-            }
-        }
+       stage('Deploy with Ansible') {
+           steps {
+               withCredentials([[
+                   $class: 'AmazonWebServicesCredentialsBinding',
+                   credentialsId: 'awsCredential'   // <--- your ID
+               ]]) {
+                   // inside this block Jenkins sets:
+                   //   env.AWS_ACCESS_KEY_ID
+                   //   env.AWS_SECRET_ACCESS_KEY
+                   sh """
+                       ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
+                           /home/ubuntu/ansible/playbooks/deploy_backend.yml \
+                           --private-key=/var/lib/jenkins/.ssh/userkey.pem \
+                           -e "aws_access_key=${env.AWS_ACCESS_KEY_ID}" \
+                           -e "aws_secret_key=${env.AWS_SECRET_ACCESS_KEY}" \
+                           -e "aws_s3_bucket=${env.AWS_S3_BUCKET}" \
+                           -e "aws_s3_region=${env.AWS_REGION}"
+                   """
+               }
+           }
+       }
     }
 
     post {
