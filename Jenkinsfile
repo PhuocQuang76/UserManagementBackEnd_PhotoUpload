@@ -27,10 +27,20 @@ pipeline {
         stage('Get All Config') {
             steps {
                 script {
+                    // Get dynamic IPs from Terraform outputs
                     env.BACKEND_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip', returnStdout: true).trim()
                     env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
-                    env.AWS_S3_BUCKET = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw s3_bucket_name', returnStdout: true).trim()
-                    env.AWS_REGION = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw aws_region', returnStdout: true).trim()
+
+                    // Parse terraform.tfvars directly (no hardcode)
+                    env.AWS_S3_BUCKET = sh(
+                        script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+                        returnStdout: true
+                    ).trim()
+
+                    env.AWS_REGION = sh(
+                        script: '''grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+                        returnStdout: true
+                    ).trim()
 
                     echo "Backend: ${env.BACKEND_IP}"
                     echo "Database: ${env.DATABASE_IP}"
