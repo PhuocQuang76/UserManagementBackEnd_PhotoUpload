@@ -36,14 +36,22 @@ pipeline {
         }
 
 
-        stage('Get Backend IP') {
+
+        stage('Get Backend & DB IPs') {
             steps {
                 script {
                     env.BACKEND_IP = sh(
                         script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
                         returnStdout: true
                     ).trim()
+
+                    env.DATABASE_IP = sh(
+                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip',
+                        returnStdout: true
+                    ).trim()
+
                     echo "Backend IP: ${env.BACKEND_IP}"
+                    echo "Database IP: ${env.DATABASE_IP}"
                 }
             }
         }
