@@ -62,27 +62,25 @@ pipeline {
         }
 
 
-       stage('Deploy with Ansible') {
-           steps {
-               withCredentials([[
-                   $class: 'AmazonWebServicesCredentialsBinding',
-                   credentialsId: 'awsCredential'   // <--- your ID
-               ]]) {
-                   // inside this block Jenkins sets:
-                   //   env.AWS_ACCESS_KEY_ID
-                   //   env.AWS_SECRET_ACCESS_KEY
-                   sh """
-                       ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-                           /home/ubuntu/ansible/playbooks/deploy_backend.yml \
-                           --private-key=/var/lib/jenkins/.ssh/userkey.pem \
-                           -e "aws_access_key=${env.AWS_ACCESS_KEY_ID}" \
-                           -e "aws_secret_key=${env.AWS_SECRET_ACCESS_KEY}" \
-                           -e "aws_s3_bucket=${env.AWS_S3_BUCKET}" \
-                           -e "aws_s3_region=${env.AWS_REGION}"
-                   """
-               }
-           }
-       }
+      stage('Deploy with Ansible') {
+          steps {
+              withCredentials([usernamePassword(
+                  credentialsId: 'awsCredential',
+                  usernameVariable: 'AWS_ACCESS_KEY',
+                  passwordVariable: 'AWS_SECRET_KEY'
+              )]) {
+                  sh """
+                      ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
+                          /home/ubuntu/ansible/playbooks/deploy_backend.yml \
+                          --private-key=/var/lib/jenkins/.ssh/userkey.pem \
+                          -e "aws_access_key=${env.AWS_ACCESS_KEY}" \
+                          -e "aws_secret_key=${env.AWS_SECRET_KEY}" \
+                          -e "aws_s3_bucket=${env.AWS_S3_BUCKET}" \
+                          -e "aws_s3_region=${env.AWS_REGION}"
+                  """
+              }
+          }
+      }
     }
 
     post {
