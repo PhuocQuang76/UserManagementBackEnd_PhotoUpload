@@ -21,50 +21,42 @@ pipeline {
             }
         }
 
-       stage('Get Server IPs') {
-                   steps {
-                       sh '''
-                           echo "Getting server IPs dynamically..."
+      stage('Get Server IPs') {
+                  steps {
+                      script {
+                          // Try terraform first
+                          try {
+                              env.BACKEND_IP = sh(
+                                  script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
+                                  returnStdout: true
+                              ).trim()
 
-                           # Copy terraform state to workspace
-                           cp /home/ubuntu/terraform/terraform.tfstate ./terraform.tfstate 2>/dev/null || echo "State file not accessible"
+                              env.DATABASE_IP = sh(
+                                  script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip',
+                                  returnStdout: true
+                              ).trim()
 
-                           # Extract IPs from state file
-                           if [ -f "./terraform.tfstate" ]; then
-                               BACKEND_IP=$(grep -o '"backend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
-                               DATABASE_IP=$(grep -o '"database_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
-                               FRONTEND_IP=$(grep -o '"frontend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                              echo "✅ Backend IP: ${env.BACKEND_IP}"
+                              echo "✅ Database IP: ${env.DATABASE_IP}"
+                          } catch (Exception e) {
+                              echo "❌ Terraform failed: ${e.getMessage()}"
+                              // Fallback to AWS CLI
+                              env.BACKEND_IP = sh(
+                                  script: 'aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-server" --query "Reservations[*].Instances[*].PublicIpAddress" --output text | head -1',
+                                  returnStdout: true
+                              ).trim()
 
-                               echo "✅ Extracted IPs from terraform.tfstate"
-                               echo "Backend IP: $BACKEND_IP"
-                               echo "Database IP: $DATABASE_IP"
-                               echo "Frontend IP: $FRONTEND_IP"
-                           else
-                               # Fallback if state file not accessible
-                               echo "❌ Terraform state file not accessible"
-                               BACKEND_IP="54.91.109.116"
-                               DATABASE_IP="34.229.179.196"
-                               FRONTEND_IP="34.228.82.246"
-                               echo "Using fallback IPs"
-                           fi
+                              env.DATABASE_IP = sh(
+                                  script: 'aws ec2 describe-instances --filters "Name=tag:Name,Values=database-server" --query "Reservations[*].Instances[*].PublicIpAddress" --output text | head -1',
+                                  returnStdout: true
+                              ).trim()
 
-                           # Export for script block
-                           export BACKEND_IP=$BACKEND_IP
-                           export DATABASE_IP=$DATABASE_IP
-                           export FRONTEND_IP=$FRONTEND_IP
-                       '''
-                       script {
-                           // Read from environment variables
-                           env.BACKEND_IP = sh(returnStdout: true, script: 'echo $BACKEND_IP').trim()
-                           env.DATABASE_IP = sh(returnStdout: true, script: 'echo $DATABASE_IP').trim()
-                           env.FRONTEND_IP = sh(returnStdout: true, script: 'echo $FRONTEND_IP').trim()
-
-                           echo "Final Backend IP: ${env.BACKEND_IP}"
-                           echo "Final Database IP: ${env.DATABASE_IP}"
-                           echo "Final Frontend IP: ${env.FRONTEND_IP}"
-                       }
-                   }
-               }
+                              echo "✅ Backend IP (from AWS): ${env.BACKEND_IP}"
+                              echo "✅ Database IP (from AWS): ${env.DATABASE_IP}"
+                          }
+                      }
+                  }
+              }
 
                stage('Copy JAR to Server') {
                    steps {
