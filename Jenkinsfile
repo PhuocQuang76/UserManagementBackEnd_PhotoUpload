@@ -22,34 +22,43 @@ pipeline {
         }
 
        stage('Get Server IPs') {
-                   steps {
-                       sh '''
-                           echo "Getting server IPs dynamically..."
+           steps {
+               sh '''
+                   echo "Getting server IPs dynamically..."
 
-                           # Copy terraform state to workspace
-                           cp /home/ubuntu/terraform/terraform.tfstate ./terraform.tfstate 2>/dev/null || echo "State file not accessible"
+                   # Copy terraform state to workspace
+                   cp /home/ubuntu/terraform/terraform.tfstate ./terraform.tfstate 2>/dev/null || echo "State file not accessible"
 
-                           # Extract IPs from state file
-                           if [ -f "./terraform.tfstate" ]; then
-                               BACKEND_IP=$(grep -o '"backend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
-                               DATABASE_IP=$(grep -o '"database_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
-                               FRONTEND_IP=$(grep -o '"frontend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                   # Read IPs from state file
+                   if [ -f "./terraform.tfstate" ]; then
+                       BACKEND_IP=$(grep -o '"backend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                       DATABASE_IP=$(grep -o '"database_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                       FRONTEND_IP=$(grep -o '"frontend_ip": {[^}]*"value": "[^"]*"' ./terraform.tfstate | grep -o '"[^"]*"$' | head -1 | tr -d '"')
 
-                               echo "✅ Extracted IPs from terraform.tfstate"
-                               echo "Backend IP: $BACKEND_IP"
-                               echo "Database IP: $DATABASE_IP"
-                               echo "Frontend IP: $FRONTEND_IP"
-                           else
-                               # Fallback if state file not accessible
-                               echo "❌ Terraform state file not accessible"
-                               BACKEND_IP="54.91.109.116"
-                               DATABASE_IP="34.229.179.196"
-                               FRONTEND_IP="34.228.82.246"
-                               echo "Using fallback IPs"
-                           fi
-                       '''
+                       echo "✅ Extracted IPs from terraform.tfstate"
+                   else
+                       # Fallback IPs
+                       BACKEND_IP="54.91.109.116"
+                       DATABASE_IP="34.229.179.196"
+                       FRONTEND_IP="34.228.82.246"
+                       echo "Using fallback IPs"
+                   fi
+
+                   echo "Backend IP: $BACKEND_IP"
+                   echo "Database IP: $DATABASE_IP"
+                   echo "Frontend IP: $FRONTEND_IP"
+               '''
+               script {
+                   env.BACKEND_IP = sh(returnStdout: true, script: 'echo $BACKEND_IP').trim()
+                   env.DATABASE_IP = sh(returnStdout: true, script: 'echo $DATABASE_IP').trim()
+                   env.FRONTEND_IP = sh(returnStdout: true, script: 'echo $FRONTEND_IP').trim()
+
+                   echo "Final Backend IP: ${env.BACKEND_IP}"
+                   echo "Final Database IP: ${env.DATABASE_IP}"
+                   echo "Final Frontend IP: ${env.FRONTEND_IP}"
                }
-               }
+           }
+       }
 
         stage('Copy JAR to Server') {
             steps {
