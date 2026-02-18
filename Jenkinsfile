@@ -57,15 +57,16 @@ pipeline {
         }
 
         stage('Copy JAR to Server') {
-           steps {
-               sh '''
-                   echo "Copying JAR to ${env.BACKEND_IP}..."
-                   scp -i /var/lib/jenkins/.ssh/userkey.pem -o StrictHostKeyChecking=no \
-                       target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
-                   echo "✅ JAR copied successfully"
-               '''
-           }
+            steps {
+                sh """#!/bin/bash -e
+                    echo "Copying JAR to ${env.BACKEND_IP}..."
+                    scp -i /var/lib/jenkins/.ssh/userkey.pem -o StrictHostKeyChecking=no \
+                        target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
+                    echo "✅ JAR copied successfully"
+                """
+            }
         }
+
 
         stage('Deploy with Ansible') {
             steps {
