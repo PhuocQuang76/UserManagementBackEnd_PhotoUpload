@@ -24,17 +24,24 @@ pipeline {
        stage('Get Server IPs') {
            steps {
                sh '''
-                   # Extract IPs from terraform.tfstate
-                   eval $(cat /home/ubuntu/terraform/terraform.tfstate | grep -E '"(backend|database|frontend)_ip": {[^}]*"value": "[^"]*"' | grep -o '"\1": "[^"]*"' | sed 's/": "/=/g' | sed 's/"//g')
+                   # Copy state file with ubuntu user, then read as jenkins
+                   sudo cp /home/ubuntu/terraform/terraform.tfstate ./terraform.tfstate
+                   sudo chown jenkins:jenkins ./terraform.tfstate
+                   sudo chmod 644 ./terraform.tfstate
 
-                   echo "Backend IP: $backend_ip"
-                   echo "Database IP: $database_ip"
-                   echo "Frontend IP: $frontend_ip"
+                   # Read IPs from copied file
+                   BACKEND_IP=$(cat ./terraform.tfstate | grep -o '"backend_ip": {[^}]*"value": "[^"]*"' | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                   DATABASE_IP=$(cat ./terraform.tfstate | grep -o '"database_ip": {[^}]*"value": "[^"]*"' | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+                   FRONTEND_IP=$(cat ./terraform.tfstate | grep -o '"frontend_ip": {[^}]*"value": "[^"]*"' | grep -o '"[^"]*"$' | head -1 | tr -d '"')
+
+                   echo "Backend IP: $BACKEND_IP"
+                   echo "Database IP: $DATABASE_IP"
+                   echo "Frontend IP: $FRONTEND_IP"
                '''
                script {
-                   env.BACKEND_IP = sh(returnStdout: true, script: 'echo $backend_ip').trim()
-                   env.DATABASE_IP = sh(returnStdout: true, script: 'echo $database_ip').trim()
-                   env.FRONTEND_IP = sh(returnStdout: true, script: 'echo $frontend_ip').trim()
+                   env.BACKEND_IP = sh(returnStdout: true, script: 'echo $BACKEND_IP').trim()
+                   env.DATABASE_IP = sh(returnStdout: true, script: 'echo $DATABASE_IP').trim()
+                   env.FRONTEND_IP = sh(returnStdout: true, script: 'echo $FRONTEND_IP').trim()
 
                    echo "Final Backend IP: ${env.BACKEND_IP}"
                    echo "Final Database IP: ${env.DATABASE_IP}"
