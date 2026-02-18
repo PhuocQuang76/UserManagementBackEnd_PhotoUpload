@@ -21,26 +21,27 @@ pipeline {
             }
         }
 
-        stage('Get Server IPs') {
-            steps {
-                script {
-                    // Get Backend IP
-                    env.BACKEND_IP = sh(
-                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
-                        returnStdout: true
-                    ).trim()
+       stage('Get Server IPs') {
+           steps {
+               sh '''
+                   # Extract IPs from terraform.tfstate
+                   eval $(cat /home/ubuntu/terraform/terraform.tfstate | grep -E '"(backend|database|frontend)_ip": {[^}]*"value": "[^"]*"' | grep -o '"\1": "[^"]*"' | sed 's/": "/=/g' | sed 's/"//g')
 
-                    // Get Database IP
-                    env.DATABASE_IP = sh(
-                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip',
-                        returnStdout: true
-                    ).trim()
+                   echo "Backend IP: $backend_ip"
+                   echo "Database IP: $database_ip"
+                   echo "Frontend IP: $frontend_ip"
+               '''
+               script {
+                   env.BACKEND_IP = sh(returnStdout: true, script: 'echo $backend_ip').trim()
+                   env.DATABASE_IP = sh(returnStdout: true, script: 'echo $database_ip').trim()
+                   env.FRONTEND_IP = sh(returnStdout: true, script: 'echo $frontend_ip').trim()
 
-                    echo "Backend IP: ${env.BACKEND_IP}"
-                    echo "Database IP: ${env.DATABASE_IP}"
-                }
-            }
-        }
+                   echo "Final Backend IP: ${env.BACKEND_IP}"
+                   echo "Final Database IP: ${env.DATABASE_IP}"
+                   echo "Final Frontend IP: ${env.FRONTEND_IP}"
+               }
+           }
+       }
 
         stage('Copy JAR to Server') {
             steps {
