@@ -49,6 +49,7 @@ pipeline {
                            fi
                        '''
                }
+               }
 
         stage('Copy JAR to Server') {
             steps {
