@@ -21,53 +21,29 @@ pipeline {
             }
         }
 
-      stage('Get Server IPs') {
-                  steps {
-                      script {
-                          // Try terraform first
-                          try {
-                              env.BACKEND_IP = sh(
-                                  script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
-                                  returnStdout: true
-                              ).trim()
 
-                              env.DATABASE_IP = sh(
-                                  script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip',
-                                  returnStdout: true
-                              ).trim()
+        stage('Get Backend IP') {
+            steps {
+                script {
+                    env.BACKEND_IP = sh(
+                        script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip',
+                        returnStdout: true
+                    ).trim()
+                    echo "Backend IP: ${env.BACKEND_IP}"
+                }
+            }
+        }
 
-                              echo "✅ Backend IP: ${env.BACKEND_IP}"
-                              echo "✅ Database IP: ${env.DATABASE_IP}"
-                          } catch (Exception e) {
-                              echo "❌ Terraform failed: ${e.getMessage()}"
-                              // Fallback to AWS CLI
-                              env.BACKEND_IP = sh(
-                                  script: 'aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-server" --query "Reservations[*].Instances[*].PublicIpAddress" --output text | head -1',
-                                  returnStdout: true
-                              ).trim()
-
-                              env.DATABASE_IP = sh(
-                                  script: 'aws ec2 describe-instances --filters "Name=tag:Name,Values=database-server" --query "Reservations[*].Instances[*].PublicIpAddress" --output text | head -1',
-                                  returnStdout: true
-                              ).trim()
-
-                              echo "✅ Backend IP (from AWS): ${env.BACKEND_IP}"
-                              echo "✅ Database IP (from AWS): ${env.DATABASE_IP}"
-                          }
-                      }
-                  }
-              }
-
-               stage('Copy JAR to Server') {
-                   steps {
-                       sh '''
-                           echo "Copying JAR to ${env.BACKEND_IP}..."
-                           scp -i /var/lib/jenkins/.ssh/userkey.pem -o StrictHostKeyChecking=no \
-                               target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
-                           echo "✅ JAR copied successfully"
-                       '''
-                   }
-               }
+        stage('Copy JAR to Server') {
+           steps {
+               sh '''
+                   echo "Copying JAR to ${env.BACKEND_IP}..."
+                   scp -i /var/lib/jenkins/.ssh/userkey.pem -o StrictHostKeyChecking=no \
+                       target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
+                   echo "✅ JAR copied successfully"
+               '''
+           }
+        }
 
         stage('Deploy with Ansible') {
             steps {
