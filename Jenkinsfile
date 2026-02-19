@@ -69,6 +69,10 @@ pipeline {
             returnStdout: true
           ).trim()
 
+          echo "ECR Registry: ${ecrRegistry}"
+          echo "IMAGE_NAME: ${env.IMAGE_NAME}"
+          echo "IMAGE_TAG: ${env.IMAGE_TAG}"
+
           sh """
             docker build -t ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG} .
             docker tag ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG} \
