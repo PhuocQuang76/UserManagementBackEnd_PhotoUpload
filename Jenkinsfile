@@ -1,22 +1,29 @@
 pipeline {
   agent any
 
-  tools {
-    maven 'Maven3'
-    jdk 'JDK17'
-  }
-
   environment {
     IMAGE_TAG         = "${BUILD_NUMBER}"
   }
 
   stages {
     stage('Checkout') {
-      steps {
-        git branch: 'main',
-          url: 'https://github.com/neerajbalodi/user-management-backend.git'
-      }
-    }
+       steps {
+           checkout scmGit(
+               branches: [[name: '*/main']],
+               extensions: [],
+               userRemoteConfigs: [[
+                   credentialsId: 'gitCredential',
+                   url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
+               ]]
+           )
+       }
+   }
+
+   stage('Build JAR') {
+       steps {
+           sh 'mvn clean package -DskipTests'
+       }
+   }
 
     stage('Build Docker Image') {
       steps {
