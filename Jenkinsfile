@@ -98,31 +98,31 @@ pipeline {
     }
 
     stage('Deploy to Backend EC2') {
-       steps {
-            withCredentials([usernamePassword(
-                  credentialsId: 'awsCredential',
-                  usernameVariable: 'AWS_ACCESS_KEY_ID',
-                  passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'awsCredential',
+          usernameVariable: 'AWS_ACCESS_KEY_ID',
+          passwordVariable: 'AWS_SECRET_ACCESS_KEY'
         )]) {
           script {
-              def ecrRegistry = sh(
-                script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
-                returnStdout: true
-              ).trim()
+            def ecrRegistry = sh(
+              script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
+              returnStdout: true
+            ).trim()
 
-              sh """
-                export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                aws ecr get-login-password --region us-east-1 | \
-                  docker login --username AWS --password-stdin ${ecrRegistry}
+            sh """
+              export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+              export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+              aws ecr get-login-password --region us-east-1 | \
+                docker login --username AWS --password-stdin ${ecrRegistry}
 
-                docker push ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
-                docker push ${ecrRegistry}/${env.IMAGE_NAME}:latest
-              """
-            }
+              docker push ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
+              docker push ${ecrRegistry}/${env.IMAGE_NAME}:latest
+            """
           }
         }
-      }
+      }  // ✅ This was missing
+    }
 
   post {
     success {
