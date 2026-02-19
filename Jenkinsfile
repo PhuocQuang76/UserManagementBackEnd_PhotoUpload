@@ -65,7 +65,7 @@ pipeline {
       steps {
         script {
           def ecrRegistry = sh(
-            script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
+            script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry',
             returnStdout: true
           ).trim()
 
