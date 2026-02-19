@@ -26,39 +26,39 @@ pipeline {
     }
 
     stage('Get All Config') {
-        steps {
-            script {
-              // Get dynamic IPs from Terraform outputs
-              env.BACKEND_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip', returnStdout: true).trim()
-              env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
+      steps {
+        script {
+          // Get dynamic IPs from Terraform outputs
+          env.BACKEND_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip', returnStdout: true).trim()
+          env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
 
-              // Get ECR registry from Terraform
-              env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_repository_url', returnStdout: true).trim()
+          // Get ECR registry from Terraform
+          env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_repository_url', returnStdout: true).trim()
 
-              // Parse terraform.tfvars directly
-              env.AWS_S3_BUCKET = sh(
-                script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
-                returnStdout: true
-              ).trim()
+          // Parse terraform.tfvars directly
+          env.AWS_S3_BUCKET = sh(
+            script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+            returnStdout: true
+          ).trim()
 
-              env.AWS_REGION = sh(
-                script: '''grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
-                returnStdout: true
-              ).trim()
+          env.AWS_REGION = sh(
+            script: '''grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+            returnStdout: true
+          ).trim()
 
-              env.IMAGE_NAME = sh(
-                script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
-                returnStdout: true
-              ).trim()
+          env.IMAGE_NAME = sh(
+            script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+            returnStdout: true
+          ).trim()
 
-              echo "Backend: ${env.BACKEND_IP}"
-              echo "Database: ${env.DATABASE_IP}"
-              echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
-              echo "Image: ${env.IMAGE_NAME}"
-              echo "Region: ${env.AWS_REGION}"
-              echo "ECR Registry: ${env.ECR_REGISTRY}"
-           }
+          echo "Backend: ${env.BACKEND_IP}"
+          echo "Database: ${env.DATABASE_IP}"
+          echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
+          echo "Image: ${env.IMAGE_NAME}"
+          echo "Region: ${env.AWS_REGION}"
+          echo "ECR Registry: ${env.ECR_REGISTRY}"
         }
+      }
     }
 
     stage('Build Docker Image') {
@@ -70,9 +70,9 @@ pipeline {
           ).trim()
 
           sh """
-            docker build -t ${ecrRegistry}/${IMAGE_NAME}:${IMAGE_TAG} .
-            docker tag ${ecrRegistry}/${IMAGE_NAME}:${IMAGE_TAG} \
-                      ${ecrRegistry}/${IMAGE_NAME}:latest
+            docker build -t ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG} .
+            docker tag ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG} \
+                      ${ecrRegistry}/${env.IMAGE_NAME}:latest
           """
         }
       }
@@ -80,19 +80,27 @@ pipeline {
 
     stage('Push to ECR') {
       steps {
-        script {
-          def ecrRegistry = sh(
-            script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
-            returnStdout: true
-          ).trim()
+        withCredentials([usernamePassword(
+          credentialsId: 'awsCredential',
+          usernameVariable: 'AWS_ACCESS_KEY_ID',
+          passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+        )]) {
+          script {
+            def ecrRegistry = sh(
+              script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
+              returnStdout: true
+            ).trim()
 
-          sh """
-            aws ecr get-login-password --region us-east-1 | \
-              docker login --username AWS --password-stdin ${ecrRegistry}
+            sh """
+              export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+              export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+              aws ecr get-login-password --region us-east-1 | \
+                docker login --username AWS --password-stdin ${ecrRegistry}
 
-            docker push ${ecrRegistry}/${IMAGE_NAME}:${IMAGE_TAG}
-            docker push ${ecrRegistry}/${IMAGE_NAME}:latest
-          """
+              docker push ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
+              docker push ${ecrRegistry}/${env.IMAGE_NAME}:latest
+            """
+          }
         }
       }
     }
@@ -121,8 +129,9 @@ pipeline {
             """
           }
         }
-      }  // ✅ This was missing
+      }
     }
+  }
 
   post {
     success {
