@@ -80,27 +80,23 @@ pipeline {
 
     stage('Push to ECR') {
       steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'awsCredential',
-          usernameVariable: 'AWS_ACCESS_KEY_ID',
-          passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-        )]) {
-          script {
-            def ecrRegistry = sh(
-              script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
-              returnStdout: true
-            ).trim()
+        script {
+          def ecrRegistry = sh(
+            script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
+            returnStdout: true
+          ).trim()
 
-            sh """
-              export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-              export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-              aws ecr get-login-password --region us-east-1 | \
-                docker login --username AWS --password-stdin ${ecrRegistry}
+          sh """
+            aws configure set aws_access_key_id AKIA6MHXHSBFY7O42MVH
+            aws configure set aws_secret_access_key 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
+            aws configure set region us-east-1
 
-              docker push ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
-              docker push ${ecrRegistry}/${env.IMAGE_NAME}:latest
-            """
-          }
+            aws ecr get-login-password --region us-east-1 | \
+              docker login --username AWS --password-stdin ${ecrRegistry}
+
+            docker push ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
+            docker push ${ecrRegistry}/${env.IMAGE_NAME}:latest
+          """
         }
       }
     }
