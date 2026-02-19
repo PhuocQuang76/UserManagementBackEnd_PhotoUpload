@@ -46,6 +46,14 @@ pipeline {
             returnStdout: true
           ).trim()
 
+          // Debug IMAGE_NAME parsing
+          def rawImageName = sh(
+            script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars''',
+            returnStdout: true
+          ).trim()
+
+          echo "Raw IMAGE_NAME line: '${rawImageName}'"
+
           env.IMAGE_NAME = sh(
             script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
             returnStdout: true
@@ -55,9 +63,8 @@ pipeline {
           echo "Database: ${env.DATABASE_IP}"
           echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
           echo "Image: '${env.IMAGE_NAME}'"  // Debug with quotes
-          echo "IMAGE_NAME: '${env.IMAGE_NAME}'"  // Debug with quotes
-          echo "IMAGE_TAG: '${env.IMAGE_TAG}'"
-          echo "ECR Registry: '${env.ECR_REGISTRY}'"
+          echo "Region: ${env.AWS_REGION}"
+          echo "ECR Registry: ${env.ECR_REGISTRY}"
         }
       }
     }
