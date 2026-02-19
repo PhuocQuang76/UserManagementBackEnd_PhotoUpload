@@ -113,6 +113,7 @@ pipeline {
           passwordVariable: 'AWS_SECRET_ACCESS_KEY'
         )]) {
           sh """
+            export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
               /home/ubuntu/ansible/playbooks/deploy_backend_docker.yml \
               --private-key=/var/lib/jenkins/.ssh/userkey.pem \
