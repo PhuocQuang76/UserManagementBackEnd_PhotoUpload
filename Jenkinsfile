@@ -98,11 +98,11 @@ pipeline {
     }
 
     stage('Deploy to Backend EC2') {
-      steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'awsCredential',
-          usernameVariable: 'AWS_ACCESS_KEY_ID',
-          passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+       steps {
+            withCredentials([usernamePassword(
+                credentialsId: 'awsCredential',
+                usernameVariable: 'AWS_ACCESS_KEY',
+                passwordVariable: 'AWS_SECRET_KEY'
         )]) {
           sh """
             ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
