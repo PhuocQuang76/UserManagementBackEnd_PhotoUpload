@@ -25,6 +25,42 @@ pipeline {
       }
     }
 
+    stage('Get All Config') {
+        steps {
+            script {
+              // Get dynamic IPs from Terraform outputs
+              env.BACKEND_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip', returnStdout: true).trim()
+              env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
+
+              // Get ECR registry from Terraform
+              env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_repository_url', returnStdout: true).trim()
+
+              // Parse terraform.tfvars directly
+              env.AWS_S3_BUCKET = sh(
+                script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+                returnStdout: true
+              ).trim()
+
+              env.AWS_REGION = sh(
+                script: '''grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+                returnStdout: true
+              ).trim()
+
+              env.IMAGE_NAME = sh(
+                script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+                returnStdout: true
+              ).trim()
+
+              echo "Backend: ${env.BACKEND_IP}"
+              echo "Database: ${env.DATABASE_IP}"
+              echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
+              echo "Image: ${env.IMAGE_NAME}"
+              echo "Region: ${env.AWS_REGION}"
+              echo "ECR Registry: ${env.ECR_REGISTRY}"
+           }
+        }
+    }
+
     stage('Build Docker Image') {
       steps {
         script {
