@@ -55,8 +55,9 @@ pipeline {
           echo "Database: ${env.DATABASE_IP}"
           echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
           echo "Image: '${env.IMAGE_NAME}'"  // Debug with quotes
-          echo "Region: ${env.AWS_REGION}"
-          echo "ECR Registry: ${env.ECR_REGISTRY}"
+          echo "IMAGE_NAME: '${env.IMAGE_NAME}'"  // Debug with quotes
+          echo "IMAGE_TAG: '${env.IMAGE_TAG}'"
+          echo "ECR Registry: '${env.ECR_REGISTRY}'"
         }
       }
     }
@@ -69,9 +70,7 @@ pipeline {
             returnStdout: true
           ).trim()
 
-          echo "ECR Registry: ${ecrRegistry}"
-          echo "IMAGE_NAME: ${env.IMAGE_NAME}"
-          echo "IMAGE_TAG: ${env.IMAGE_TAG}"
+          echo "Building image: ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
 
           sh """
             docker build -t ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG} .
