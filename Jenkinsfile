@@ -33,7 +33,7 @@ pipeline {
           env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
 
           // Get ECR registry from Terraform
-          env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_repository_url', returnStdout: true).trim()
+          env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_repository', returnStdout: true).trim()
 
           // Parse terraform.tfvars directly
           env.AWS_S3_BUCKET = sh(
