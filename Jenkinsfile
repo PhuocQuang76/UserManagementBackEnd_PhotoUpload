@@ -100,26 +100,29 @@ pipeline {
     stage('Deploy to Backend EC2') {
        steps {
             withCredentials([usernamePassword(
-                credentialsId: 'awsCredential',
-                usernameVariable: 'AWS_ACCESS_KEY',
-                passwordVariable: 'AWS_SECRET_KEY'
+                  credentialsId: 'awsCredential',
+                  usernameVariable: 'AWS_ACCESS_KEY_ID',
+                  passwordVariable: 'AWS_SECRET_ACCESS_KEY'
         )]) {
-          sh """
-            ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-              /home/ubuntu/ansible/playbooks/deploy_backend_docker.yml \
-              --private-key=/var/lib/jenkins/.ssh/userkey.pem \
-              -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
-              -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
-              -e "aws_s3_bucket=user-management-s3-bucket-syn" \
-              -e "aws_s3_region=eu-north-1" \
-              -e "image_tag=${env.IMAGE_TAG}" \
-              -e "ecr_registry=${ecrRegistry}" \
-              -e "image_name=${env.IMAGE_NAME}"
-          """
+          script {
+              def ecrRegistry = sh(
+                script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
+                returnStdout: true
+              ).trim()
+
+              sh """
+                export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                aws ecr get-login-password --region us-east-1 | \
+                  docker login --username AWS --password-stdin ${ecrRegistry}
+
+                docker push ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
+                docker push ${ecrRegistry}/${env.IMAGE_NAME}:latest
+              """
+            }
+          }
         }
       }
-    }
-  }
 
   post {
     success {
