@@ -1,94 +1,104 @@
 pipeline {
-    agent any
+  agent any
 
+  tools {
+    maven 'Maven3'
+    jdk 'JDK17'
+  }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scmGit(
-                    branches: [[name: '*/main']],
-                    extensions: [],
-                    userRemoteConfigs: [[
-                        credentialsId: 'gitCredential',
-                        url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
-                    ]]
-                )
-            }
-        }
+  environment {
+    IMAGE_TAG         = "${BUILD_NUMBER}"
+  }
 
-        stage('Build JAR') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-
-
-        stage('Get All Config') {
-            steps {
-                script {
-                    // Get dynamic IPs from Terraform outputs
-                    env.BACKEND_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip', returnStdout: true).trim()
-                    env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
-
-                    // Parse terraform.tfvars directly (no hardcode)
-                    env.AWS_S3_BUCKET = sh(
-                        script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
-                        returnStdout: true
-                    ).trim()
-
-                    env.AWS_REGION = sh(
-                        script: '''grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
-                        returnStdout: true
-                    ).trim()
-
-                    echo "Backend: ${env.BACKEND_IP}"
-                    echo "Database: ${env.DATABASE_IP}"
-                    echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
-                    echo "Region: ${env.AWS_REGION}"
-                }
-            }
-        }
-
-        stage('Copy JAR to Server') {
-            steps {
-                sh """#!/bin/bash -e
-                    echo "Copying JAR to ${env.BACKEND_IP}..."
-                    scp -i /var/lib/jenkins/.ssh/userkey.pem -o StrictHostKeyChecking=no \
-                        target/*.jar ubuntu@${env.BACKEND_IP}:/tmp/application.jar
-                    echo "✅ JAR copied successfully"
-                """
-            }
-        }
-
-
-      stage('Deploy with Ansible') {
-          steps {
-              withCredentials([usernamePassword(
-                  credentialsId: 'awsCredential',
-                  usernameVariable: 'AWS_ACCESS_KEY',
-                  passwordVariable: 'AWS_SECRET_KEY'
-              )]) {
-                  sh """
-                      ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-                          /home/ubuntu/ansible/playbooks/deploy_backend.yml \
-                          --private-key=/var/lib/jenkins/.ssh/userkey.pem \
-                          -e "aws_access_key=${env.AWS_ACCESS_KEY}" \
-                          -e "aws_secret_key=${env.AWS_SECRET_KEY}" \
-                          -e "aws_s3_bucket=${env.AWS_S3_BUCKET}" \
-                          -e "aws_s3_region=${env.AWS_REGION}"
-                  """
-              }
-          }
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main',
+          url: 'https://github.com/neerajbalodi/user-management-backend.git'
       }
     }
 
-    post {
-        success {
-            echo "✅ Deployment successful!"
+    stage('Build Docker Image') {
+      steps {
+        script {
+          def ecrRegistry = sh(
+            script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
+            returnStdout: true
+          ).trim()
+
+          sh """
+            docker build -t ${ecrRegistry}/${IMAGE_NAME}:${IMAGE_TAG} .
+            docker tag ${ecrRegistry}/${IMAGE_NAME}:${IMAGE_TAG} \
+                      ${ecrRegistry}/${IMAGE_NAME}:latest
+          """
         }
-        failure {
-            echo "❌ Deployment failed!"
-        }
+      }
     }
+
+    stage('Push to ECR') {
+      steps {
+        script {
+          def ecrRegistry = sh(
+            script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
+            returnStdout: true
+          ).trim()
+
+          sh """
+            aws ecr get-login-password --region us-east-1 | \
+              docker login --username AWS --password-stdin ${ecrRegistry}
+
+            docker push ${ecrRegistry}/${IMAGE_NAME}:${IMAGE_TAG}
+            docker push ${ecrRegistry}/${IMAGE_NAME}:latest
+          """
+        }
+      }
+    }
+
+    stage('Deploy to Backend EC2') {
+      steps {
+        sh """
+          ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
+            /home/ubuntu/ansible/playbooks/deploy_backend_docker.yml \
+            --private-key=/var/lib/jenkins/.ssh/userkey.pem \
+            -e "aws_access_key=${AWS_ACCESS_KEY}" \
+            -e "aws_secret_key=${AWS_SECRET_KEY}" \
+            -e "aws_s3_bucket=user-management-s3-bucket-syn" \
+            -e "aws_s3_region=eu-north-1" \
+            -e "image_tag=${IMAGE_TAG}" \
+            -e "ecr_registry=${ECR_REGISTRY}" \
+            -e "image_name=${IMAGE_NAME}"
+        """
+      }
+    }
+  }
+
+   stage('Deploy with Ansible') {
+      steps {
+          sh '''
+              # Copy Ansible files to workspace first
+              cp /home/ubuntu/ansible/inventory/hosts ./hosts
+              cp /home/ubuntu/ansible/playbooks/deploy_backend.yml ./deploy_backend.yml
+
+              # Use workspace copies
+              ansible-playbook -i ./hosts ./deploy_backend.yml \
+                  --private-key=/var/lib/jenkins/userkey.pem \
+                  -e "aws_access_key=${AWS_ACCESS_KEY}" \
+                  -e "aws_secret_key=${AWS_SECRET_KEY}" \
+                  -e "aws_s3_bucket=${AWS_S3_BUCKET}" \
+                  -e "aws_s3_region=${AWS_REGION}"
+          '''
+      }
+  }
+
+  post {
+    success {
+      echo "✅ Docker container deployed!"
+    }
+    failure {
+      echo "❌ Deployment failed!"
+    }
+    always {
+      sh 'docker system prune -f'
+    }
+  }
 }
