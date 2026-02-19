@@ -54,7 +54,7 @@ pipeline {
           echo "Backend: ${env.BACKEND_IP}"
           echo "Database: ${env.DATABASE_IP}"
           echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
-          echo "Image: ${env.IMAGE_NAME}"
+          echo "Image: '${env.IMAGE_NAME}'"  # ✅ Debug with quotes
           echo "Region: ${env.AWS_REGION}"
           echo "ECR Registry: ${env.ECR_REGISTRY}"
         }
