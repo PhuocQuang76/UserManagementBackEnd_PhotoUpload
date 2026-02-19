@@ -123,7 +123,8 @@ pipeline {
               -e "aws_s3_region=${env.AWS_REGION}" \
               -e "image_tag=${env.IMAGE_TAG}" \
               -e "ecr_registry=${env.ECR_REGISTRY}" \
-              -e "image_name=${env.IMAGE_NAME}"
+              -e "image_name=${env.IMAGE_NAME}" \
+              -e "database_ip=${env.DATABASE_IP}"
           """
         }
       }
