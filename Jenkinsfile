@@ -99,18 +99,24 @@ pipeline {
 
     stage('Deploy to Backend EC2') {
       steps {
-        sh """
-          ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
-            /home/ubuntu/ansible/playbooks/deploy_backend_docker.yml \
-            --private-key=/var/lib/jenkins/.ssh/userkey.pem \
-            -e "aws_access_key=${AWS_ACCESS_KEY}" \
-            -e "aws_secret_key=${AWS_SECRET_KEY}" \
-            -e "aws_s3_bucket=user-management-s3-bucket-syn" \
-            -e "aws_s3_region=eu-north-1" \
-            -e "image_tag=${IMAGE_TAG}" \
-            -e "ecr_registry=${ECR_REGISTRY}" \
-            -e "image_name=${IMAGE_NAME}"
-        """
+        withCredentials([usernamePassword(
+          credentialsId: 'awsCredential',
+          usernameVariable: 'AWS_ACCESS_KEY_ID',
+          passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+        )]) {
+          sh """
+            ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
+              /home/ubuntu/ansible/playbooks/deploy_backend_docker.yml \
+              --private-key=/var/lib/jenkins/.ssh/userkey.pem \
+              -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
+              -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
+              -e "aws_s3_bucket=user-management-s3-bucket-syn" \
+              -e "aws_s3_region=eu-north-1" \
+              -e "image_tag=${env.IMAGE_TAG}" \
+              -e "ecr_registry=${ecrRegistry}" \
+              -e "image_name=${env.IMAGE_NAME}"
+          """
+        }
       }
     }
   }
