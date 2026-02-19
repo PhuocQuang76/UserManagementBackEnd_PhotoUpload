@@ -2,28 +2,28 @@ pipeline {
   agent any
 
   environment {
-    IMAGE_TAG         = "${BUILD_NUMBER}"
+    IMAGE_TAG = "${BUILD_NUMBER}"
   }
 
   stages {
     stage('Checkout') {
-       steps {
-           checkout scmGit(
-               branches: [[name: '*/main']],
-               extensions: [],
-               userRemoteConfigs: [[
-                   credentialsId: 'gitCredential',
-                   url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
-               ]]
-           )
-       }
-   }
+      steps {
+        checkout scmGit(
+          branches: [[name: '*/main']],
+          extensions: [],
+          userRemoteConfigs: [[
+            credentialsId: 'gitCredential',
+            url: 'https://github.com/PhuocQuang76/UserManagementBackEnd_PhotoUpload.git'
+          ]]
+        )
+      }
+    }
 
-   stage('Build JAR') {
-       steps {
-           sh 'mvn clean package -DskipTests'
-       }
-   }
+    stage('Build JAR') {
+      steps {
+        sh 'mvn clean package -DskipTests'
+      }
+    }
 
     stage('Build Docker Image') {
       steps {
@@ -77,24 +77,6 @@ pipeline {
         """
       }
     }
-  }
-
-   stage('Deploy with Ansible') {
-      steps {
-          sh '''
-              # Copy Ansible files to workspace first
-              cp /home/ubuntu/ansible/inventory/hosts ./hosts
-              cp /home/ubuntu/ansible/playbooks/deploy_backend.yml ./deploy_backend.yml
-
-              # Use workspace copies
-              ansible-playbook -i ./hosts ./deploy_backend.yml \
-                  --private-key=/var/lib/jenkins/userkey.pem \
-                  -e "aws_access_key=${AWS_ACCESS_KEY}" \
-                  -e "aws_secret_key=${AWS_SECRET_KEY}" \
-                  -e "aws_s3_bucket=${AWS_S3_BUCKET}" \
-                  -e "aws_s3_region=${AWS_REGION}"
-          '''
-      }
   }
 
   post {
