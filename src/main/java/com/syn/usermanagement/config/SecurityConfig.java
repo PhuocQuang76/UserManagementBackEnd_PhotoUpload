@@ -50,11 +50,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/",                           // ← ADD THIS
-                                "/api/auth/**",
-                                "/api/users/register",
-                                "/actuator/health",
-                                // ... other paths
+                                "/",                           // ✅ Root path - fixes ELB /
+                                "/api/auth/**",                // ✅ Login/register
+                                "/api/users/register",         // ✅ User registration
+                                "/actuator/health",            // ✅ Health checks
+                                "/v3/api-docs/**",             // ✅ Swagger docs
+                                "/swagger-ui/**",              // ✅ Swagger UI
+                                "/swagger-resources/**"        // ✅ Swagger resources
                         ).permitAll()
                         .requestMatchers("/api/users/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
@@ -63,7 +65,7 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authenticationProvider(daoAuthenticationProvider())  // ✅ Fixed method name
+                .authenticationProvider(daoAuthenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
