@@ -28,8 +28,9 @@ pipeline {
     stage('Get All Config') {
       steps {
         script {
-          // Get dynamic IPs from Terraform outputs
-          env.BACKEND_IPS = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ips', returnStdout: true).trim()
+          // Get backend IPs as comma-separated string
+          env.BACKEND_IPS = sh(script: 'terraform -chdir=/home/ubuntu/terraform output backend_ips | tr -d "[]", | tr " " ","', returnStdout: true).trim()
+
           env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
           env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
 
