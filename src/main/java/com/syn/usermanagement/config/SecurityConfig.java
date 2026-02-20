@@ -50,13 +50,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/",                           // ← ADD THIS
                                 "/api/auth/**",
-                                "/api/users/register",  // ← ADD THIS LINE
+                                "/api/users/register",
                                 "/actuator/health",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-resources/**"
-                        ).permitAll()  // ← Now /api/users/register works!
+                                // ... other paths
+                        ).permitAll()
                         .requestMatchers("/api/users/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
