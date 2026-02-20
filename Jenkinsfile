@@ -74,7 +74,7 @@ pipeline {
     stage('Push to ECR') {
       steps {
         withCredentials([usernamePassword(
-          credentialsId: 'gitCredential',
+          credentialsId: 'awsCredential',
           usernameVariable: 'AWS_ACCESS_KEY_ID',
           passwordVariable: 'AWS_SECRET_ACCESS_KEY'
         )]) {
@@ -82,6 +82,7 @@ pipeline {
             sh """
               export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
               export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+              export AWS_DEFAULT_REGION=us-east-1
               aws ecr get-login-password --region us-east-1 | \
                 docker login --username AWS --password-stdin ${env.ECR_REGISTRY}
 
