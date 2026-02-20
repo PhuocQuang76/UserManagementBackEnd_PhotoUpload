@@ -118,7 +118,7 @@ pipeline {
         }
       }
     }
-
+  }
   post {
     success {
       echo "✅ Docker container deployed!"
