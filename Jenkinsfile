@@ -100,7 +100,7 @@ pipeline {
     stage('Deploy to Backend EC2') {
       steps {
         withCredentials([usernamePassword(
-          credentialsId: 'awsCredential',
+          credentialsId: 'gitCredential',
           usernameVariable: 'AWS_ACCESS_KEY_ID',
           passwordVariable: 'AWS_SECRET_ACCESS_KEY'
         )]) {
