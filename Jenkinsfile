@@ -60,14 +60,12 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         script {
-          def ecrRegistry = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
-
-          echo "Building image: ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+          echo "Building image: ${env.ECR_REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
 
           sh """
-            docker build -t ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG} .
-            docker tag ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG} \
-                      ${ecrRegistry}/${env.IMAGE_NAME}:latest
+            docker build -t ${env.ECR_REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG} .
+            docker tag ${env.ECR_REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG} \
+                      ${env.ECR_REGISTRY}/${env.IMAGE_NAME}:latest
           """
         }
       }
@@ -85,10 +83,10 @@ pipeline {
               export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
               export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
               aws ecr get-login-password --region us-east-1 | \
-                docker login --username AWS --password-stdin ${ecrRegistry}
+                docker login --username AWS --password-stdin ${env.ECR_REGISTRY}
 
-              docker push ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
-              docker push ${ecrRegistry}/${env.IMAGE_NAME}:latest
+              docker push ${env.ECR_REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
+              docker push ${env.ECR_REGISTRY}/${env.IMAGE_NAME}:latest
             """
           }
         }
