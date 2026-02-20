@@ -6,6 +6,14 @@ pipeline {
   }
 
   stages {
+    stage('Cleanup') {
+      steps {
+        sh '''
+          docker system prune -a -f
+          rm -rf /home/jenkins/.m2/repository/*
+        '''
+      }
+    }
     stage('Checkout') {
       steps {
         checkout scmGit(
