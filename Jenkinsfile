@@ -33,7 +33,10 @@ pipeline {
           env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
           env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
 
-          // Parse terraform.tfvars directly - REMOVE QUOTES
+          // Hardcode image name to avoid parsing issues
+          env.IMAGE_NAME = "user_management"
+
+          // Parse other variables
           env.AWS_S3_BUCKET = sh(
             script: 'grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"',
             returnStdout: true
@@ -41,11 +44,6 @@ pipeline {
 
           env.AWS_REGION = sh(
             script: 'grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"',
-            returnStdout: true
-          ).trim()
-
-          env.IMAGE_NAME = sh(
-            script: 'grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"',
             returnStdout: true
           ).trim()
 
