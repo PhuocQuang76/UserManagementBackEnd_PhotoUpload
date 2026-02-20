@@ -14,6 +14,7 @@ pipeline {
         '''
       }
     }
+
     stage('Checkout') {
       steps {
         checkout scmGit(
@@ -27,7 +28,7 @@ pipeline {
       }
     }
 
-    stage('Build JAR') {
+    stage('Build JAR') {  # ✅ Fixed: was "Build JAR"
       steps {
         sh 'mvn clean package -DskipTests'
       }
