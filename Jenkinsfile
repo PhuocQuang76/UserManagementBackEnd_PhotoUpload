@@ -29,9 +29,9 @@ pipeline {
       steps {
         script {
           // Get dynamic IPs from Terraform outputs
-          env.BACKEND_IPS = sh(script: 'sudo terraform -chdir=/home/ubuntu/terraform output -raw backend_ips', returnStdout: true).trim()
-          env.DATABASE_IP = sh(script: 'sudo terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
-          env.ECR_REGISTRY = sh(script: 'sudo terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
+          env.BACKEND_IPS = sh(script: '''sudo terraform -chdir=/home/ubuntu/terraform output -raw backend_ips''', returnStdout: true).trim()
+          env.DATABASE_IP = sh(script: '''sudo terraform -chdir=/home/ubuntu/terraform output -raw database_ip''', returnStdout: true).trim()
+          env.ECR_REGISTRY = sh(script: '''sudo terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry''', returnStdout: true).trim()
 
           // Parse terraform.tfvars directly
           env.AWS_S3_BUCKET = sh(
@@ -45,7 +45,7 @@ pipeline {
           ).trim()
 
           env.IMAGE_NAME = sh(
-            script: 'grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"''',
+            script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"''',
             returnStdout: true
           ).trim()
 
@@ -62,7 +62,7 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         script {
-          def ecrRegistry = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
+          def ecrRegistry = sh(script: '''terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry''', returnStdout: true).trim()
 
           echo "Building image: ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
 
