@@ -29,10 +29,10 @@ pipeline {
       steps {
         script {
           // Get dynamic IPs from Terraform outputs
-          env.BACKEND_IPS = sh(script: '''sudo terraform -chdir=/home/ubuntu/terraform output -raw backend_ips''', returnStdout: true).trim()
-          env.DATABASE_IP = sh(script: '''sudo terraform -chdir=/home/ubuntu/terraform output -raw database_ip''', returnStdout: true).trim()
-          env.ECR_REGISTRY = sh(script: '''sudo terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry''', returnStdout: true).trim()
-
+         // Remove sudo - Jenkins should have permissions
+           env.BACKEND_IPS = sh(script: '''terraform -chdir=/home/ubuntu/terraform output -raw backend_ips''', returnStdout: true).trim()
+           env.DATABASE_IP = sh(script: '''terraform -chdir=/home/ubuntu/terraform output -raw database_ip''', returnStdout: true).trim()
+           env.ECR_REGISTRY = sh(script: '''terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry''', returnStdout: true).trim()
           // Parse terraform.tfvars directly
           env.AWS_S3_BUCKET = sh(
             script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"''',
