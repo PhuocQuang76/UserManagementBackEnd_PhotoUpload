@@ -28,25 +28,24 @@ pipeline {
     stage('Get All Config') {
       steps {
         script {
-          // Get backend IPs as comma-separated string
+          // Get dynamic IPs from Terraform outputs
           env.BACKEND_IPS = sh(script: 'terraform -chdir=/home/ubuntu/terraform output backend_ips | tr -d "[]", | tr " " ","', returnStdout: true).trim()
-
           env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
           env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
 
-          // Parse terraform.tfvars directly
+          // Parse terraform.tfvars directly - REMOVE QUOTES
           env.AWS_S3_BUCKET = sh(
-            script: 'grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"',
+            script: 'grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"',
             returnStdout: true
           ).trim()
 
           env.AWS_REGION = sh(
-            script: 'grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"',
+            script: 'grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"',
             returnStdout: true
           ).trim()
 
           env.IMAGE_NAME = sh(
-            script: 'grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"',
+            script: 'grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"',
             returnStdout: true
           ).trim()
 
