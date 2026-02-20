@@ -29,40 +29,30 @@ pipeline {
       steps {
         script {
           // Get dynamic IPs from Terraform outputs
-          env.BACKEND_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw backend_ip', returnStdout: true).trim()
-          env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
-
-          // ✅ Use ecr_registry (now available!)
-          env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
+          env.BACKEND_IPS = sh(script: 'sudo terraform -chdir=/home/ubuntu/terraform output -raw backend_ips', returnStdout: true).trim()
+          env.DATABASE_IP = sh(script: 'sudo terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
+          env.ECR_REGISTRY = sh(script: 'sudo terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
 
           // Parse terraform.tfvars directly
           env.AWS_S3_BUCKET = sh(
-            script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+            script: '''grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"''',
             returnStdout: true
           ).trim()
 
           env.AWS_REGION = sh(
-            script: '''grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+            script: '''grep "^aws_region" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"''',
             returnStdout: true
           ).trim()
-
-          // Debug IMAGE_NAME parsing
-          def rawImageName = sh(
-            script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars''',
-            returnStdout: true
-          ).trim()
-
-          echo "Raw IMAGE_NAME line: '${rawImageName}'"
 
           env.IMAGE_NAME = sh(
-            script: '''grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"''',
+            script: 'grep "^image_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g"''',
             returnStdout: true
           ).trim()
 
-          echo "Backend: ${env.BACKEND_IP}"
-          echo "Database: ${env.DATABASE_IP}"
+          echo "Backend IPs: ${env.BACKEND_IPS}"
+          echo "Database IP: ${env.DATABASE_IP}"
           echo "S3 Bucket: ${env.AWS_S3_BUCKET}"
-          echo "Image: '${env.IMAGE_NAME}'"  // Debug with quotes
+          echo "Image: ${env.IMAGE_NAME}"
           echo "Region: ${env.AWS_REGION}"
           echo "ECR Registry: ${env.ECR_REGISTRY}"
         }
@@ -72,10 +62,7 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         script {
-          def ecrRegistry = sh(
-            script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry',
-            returnStdout: true
-          ).trim()
+          def ecrRegistry = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
 
           echo "Building image: ${ecrRegistry}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
 
@@ -96,11 +83,6 @@ pipeline {
           passwordVariable: 'AWS_SECRET_ACCESS_KEY'
         )]) {
           script {
-            def ecrRegistry = sh(
-              script: 'grep ecr_registry /home/ubuntu/ansible/inventory/hosts | cut -d= -f2',
-              returnStdout: true
-            ).trim()
-
             sh """
               export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
               export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -139,7 +121,6 @@ pipeline {
         }
       }
     }
-  }
 
   post {
     success {
