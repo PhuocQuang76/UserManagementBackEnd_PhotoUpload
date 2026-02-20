@@ -113,7 +113,7 @@ pipeline {
             export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook -i /home/ubuntu/ansible/inventory/hosts \
               /home/ubuntu/ansible/playbooks/deploy_backend_docker.yml \
-              --private-key=/home/ubuntu/.ssh/userkey.pem \
+              --private-key=/var/lib/jenkins/.ssh/userkey.pem \
               -e "aws_access_key=${AWS_ACCESS_KEY_ID}" \
               -e "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
               -e "aws_s3_bucket=${env.AWS_S3_BUCKET}" \
