@@ -14,6 +14,7 @@ pipeline {
         '''
       }
     }
+
     stage('Checkout') {
       steps {
         checkout scmGit(
@@ -27,24 +28,21 @@ pipeline {
       }
     }
 
-    stage('Build JAR') {  # ✅ Fixed: was "Build JAR"
-          steps {
-            sh 'mvn clean package -DskipTests'
-          }
-        }
+    stage('Build JAR') {
+      steps {
+        sh 'mvn clean package -DskipTests'
+      }
+    }
 
     stage('Get All Config') {
       steps {
         script {
-          // Get dynamic IPs from Terraform outputs
           env.BACKEND_IPS = sh(script: 'terraform -chdir=/home/ubuntu/terraform output backend_ips | tr -d "[]", | tr " " ","', returnStdout: true).trim()
           env.DATABASE_IP = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw database_ip', returnStdout: true).trim()
           env.ECR_REGISTRY = sh(script: 'terraform -chdir=/home/ubuntu/terraform output -raw ecr_registry', returnStdout: true).trim()
 
-          // Hardcode image name to avoid parsing issues
           env.IMAGE_NAME = "user_management"
 
-          // Parse other variables
           env.AWS_S3_BUCKET = sh(
             script: 'grep "^s3_bucket_name" /home/ubuntu/terraform/terraform.tfvars | cut -d= -f2 | sed "s/ //g" | sed "s/\\"//g"',
             returnStdout: true
